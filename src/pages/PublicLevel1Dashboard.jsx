@@ -177,7 +177,7 @@ function DistrictBlockDashboard({ examType, exam }) {
         const rows = data.districts || [];
         setDistricts(rows);
         setTotal(data.totalRegistrations || 0);
-        setOpenDistricts(new Set(rows.map((district) => String(district._id))));
+        setOpenDistricts(new Set());
       })
       .catch((err) => {
         if (!cancelled) setError(err.response?.data?.message || "Unable to load dashboard.");
@@ -207,8 +207,8 @@ function DistrictBlockDashboard({ examType, exam }) {
       </div>
 
       <div className="public-level1-actions">
-        <button className="secondary" onClick={expandAll} disabled={!districts.length}>Expand All</button>
-        <button className="secondary" onClick={collapseAll} disabled={!districts.length}>Collapse All</button>
+        <button className="secondary" onClick={collapseAll} disabled={!districts.length}>District Wise</button>
+        <button className="secondary" onClick={expandAll} disabled={!districts.length}>Block Wise</button>
       </div>
 
       {loading && <div className="loading">Loading dashboard…</div>}
@@ -271,7 +271,7 @@ function BlockSchoolDashboard({ examType, exam }) {
         const rows = data.blocks || [];
         setBlocks(rows);
         setTotal(data.totalRegistrations || 0);
-        setOpenBlocks(new Set(rows.map((block) => String(block._id))));
+        setOpenBlocks(new Set());
       })
       .catch((err) => {
         if (!cancelled) setError(err.response?.data?.message || "Unable to load dashboard.");
@@ -297,8 +297,8 @@ function BlockSchoolDashboard({ examType, exam }) {
         <div><span>Total Registrations</span><strong>{total}</strong></div>
       </div>
       <div className="public-level1-actions">
-        <button className="secondary" onClick={expandAll} disabled={!blocks.length}>Expand All</button>
-        <button className="secondary" onClick={collapseAll} disabled={!blocks.length}>Collapse All</button>
+        <button className="secondary" onClick={collapseAll} disabled={!blocks.length}>Block Wise</button>
+        <button className="secondary" onClick={expandAll} disabled={!blocks.length}>School Wise</button>
       </div>
       {loading && <div className="loading">Loading dashboard…</div>}
       {error && <div className="error">{error}</div>}

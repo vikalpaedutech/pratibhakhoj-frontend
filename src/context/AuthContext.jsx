@@ -13,12 +13,12 @@ function hasExpired(token) {
 }
 
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState({ user: null, role: null, regions: [], verificationAccess: [], dashboardAccess: [] });
+  const [session, setSession] = useState({ user: null, role: null, regions: [], verificationAccess: [], dashboardAccess: [], permissions: [], schoolVisitAccess: false });
   const [loading, setLoading] = useState(true);
 
   const clearSession = () => {
     localStorage.removeItem("accessToken");
-    setSession({ user: null, role: null, regions: [], verificationAccess: [], dashboardAccess: [] });
+    setSession({ user: null, role: null, regions: [], verificationAccess: [], dashboardAccess: [], permissions: [], schoolVisitAccess: false });
   };
 
   const loadCurrentUser = async () => {
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
 
     try {
       const data = unwrap(await api.get("/auth/current-user"));
-      setSession({ user: data.user, role: data.role, regions: data.regions || [], verificationAccess: data.verificationAccess || [], dashboardAccess: data.dashboardAccess || [] });
+      setSession({ user: data.user, role: data.role, regions: data.regions || [], verificationAccess: data.verificationAccess || [], dashboardAccess: data.dashboardAccess || [], permissions: data.permissions || [], schoolVisitAccess: Boolean(data.schoolVisitAccess) });
     } catch (error) {
       if (error.response?.status === 401 || error.response?.status === 403) clearSession();
     } finally {
@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
   const login = async (contact, password) => {
     const data = unwrap(await api.post("/auth/login", { contact, password }));
     localStorage.setItem("accessToken", data.accessToken);
-    setSession({ user: data.user, role: data.role, regions: data.regions || [], verificationAccess: data.verificationAccess || [], dashboardAccess: data.dashboardAccess || [] });
+    setSession({ user: data.user, role: data.role, regions: data.regions || [], verificationAccess: data.verificationAccess || [], dashboardAccess: data.dashboardAccess || [], permissions: data.permissions || [], schoolVisitAccess: Boolean(data.schoolVisitAccess) });
     return data;
   };
 
@@ -53,6 +53,8 @@ export function AuthProvider({ children }) {
       if (localStorage.getItem("accessToken")) await api.post("/auth/logout");
     } finally {
       clearSession();
+      // Every authenticated user (admin or official user) returns to the public landing page after logout.
+      window.location.replace("/");
     }
   };
 

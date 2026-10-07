@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminShell from "../../components/AdminShell";
 import { api, unwrap } from "../../api/client";
-import { LEVEL1_DASHBOARDS, ALL_REGISTRATION_DASHBOARDS } from "../../config/dashboardAccess";
+import { LEVEL1_DASHBOARDS, ALL_REGISTRATION_DASHBOARDS, REPORT_DASHBOARDS } from "../../config/dashboardAccess";
 
 export default function AdminDashboardAccess() {
   const [mode, setMode] = useState("user");
@@ -14,7 +14,7 @@ export default function AdminDashboardAccess() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
-  const allDashboardOptions = [...LEVEL1_DASHBOARDS, ...ALL_REGISTRATION_DASHBOARDS];
+  const allDashboardOptions = [...LEVEL1_DASHBOARDS, ...ALL_REGISTRATION_DASHBOARDS, ...REPORT_DASHBOARDS];
 
   const selectableUsers = useMemo(() => users.filter((u) => u.roleId?.code !== "ADMIN" && u.userId !== "admin"), [users]);
   const selectableRoles = useMemo(() => roles.filter((r) => r.code !== "ADMIN"), [roles]);

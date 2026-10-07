@@ -118,10 +118,10 @@ export default function Success() {
                 अस्वीकृति की स्थिति में आप अपना फॉर्म संपादित करके विवरण अपडेट कर पुनः जमा कर सकते हैं।
               </p>
             )}
-            <p className="download-slip-text">Download Your Acknowledgement Slip</p>
+            <p className="download-slip-text">Acknowledgement Slip</p>
             <p className="acknowledgement-note">
-              Note: Check your registration after 24 hours. Make sure that you filled every detail in the form correctly; wrong details can lead to rejection of your form.
-              <span>(24 घंटे बाद अपना पंजीकरण जाँचें। सुनिश्चित करें कि आपने फॉर्म में सभी विवरण सही भरे हैं; गलत विवरण भरने पर आपका फॉर्म अस्वीकृत हो सकता है।)</span>
+              Note: Check your registration after 48 hours. Make sure that you filled every detail in the form correctly; wrong details can lead to rejection of your form.
+              <span>(48 घंटे बाद अपना पंजीकरण जाँचें। सुनिश्चित करें कि आपने फॉर्म में सभी विवरण सही भरे हैं; गलत विवरण भरने पर आपका फॉर्म अस्वीकृत हो सकता है।)</span>
             </p>
           </div>
         </div>

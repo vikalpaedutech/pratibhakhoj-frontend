@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import OfficialShell from "../components/OfficialShell";
 import { api, unwrap } from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -69,11 +69,11 @@ export default function OfficialDashboard() {
 
         <div className="dashboard-count-grid official-level-grid">
           {data && cards.map((type) => (
-            <div className="count-card official-level-card" key={type}>
+            <Link className="count-card official-level-card official-level-card-link" key={type} to={`/official/dashboard/${type}`}>
               <span>{EXAMS[type].name} (2028-29)</span>
               <strong>{counts[type]}</strong>
-              <small>Level 1 Registration Count · Class {EXAMS[type].classOfStudent}</small>
-            </div>
+              <small>Level 1 Registration Count · Class {EXAMS[type].classOfStudent}</small><strong className="official-level-card-label">{EXAMS[type].name} Dashboard</strong>
+            </Link>
           ))}
         </div>
       </section>

@@ -36,7 +36,7 @@ export default function CreatePassword() {
       <form className="auth-card" onSubmit={submit}>
         <div className="eyebrow">COMPLETE REGISTRATION</div>
         <h2>Create your password</h2>
-        <p className="muted">Mobile number verified: <strong>{contact || "—"}</strong></p>
+        <p className="muted">Email verified: <strong>{sessionStorage.getItem("registrationEmail") || "—"}</strong></p>
         <Field label="Create Password *" type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
         <Field label="Confirm Password *" type="password" minLength={6} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" />
         {error && <div className="error">{error}</div>}

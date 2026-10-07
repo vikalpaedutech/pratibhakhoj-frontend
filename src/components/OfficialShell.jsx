@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { LEVEL1_DASHBOARDS, ALL_REGISTRATION_DASHBOARDS } from "../config/dashboardAccess";
+import { LEVEL1_DASHBOARDS, ALL_REGISTRATION_DASHBOARDS, REPORT_DASHBOARDS } from "../config/dashboardAccess";
 
 export default function OfficialShell({ children }) {
-  const { user, role, logout, verificationAccess = [], dashboardAccess = [] } = useAuth();
+  const { user, role, logout, verificationAccess = [], dashboardAccess = [], schoolVisitAccess = false } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const accessibleDashboards = role?.code === "ADMIN"
@@ -15,18 +15,26 @@ export default function OfficialShell({ children }) {
     ? ALL_REGISTRATION_DASHBOARDS
     : ALL_REGISTRATION_DASHBOARDS.filter((item) => dashboardAccess.includes(item.code));
 
+  const accessibleReportDashboards = role?.code === "ADMIN"
+    ? REPORT_DASHBOARDS
+    : REPORT_DASHBOARDS.filter((item) => dashboardAccess.includes(item.code));
+
   const nav = [
     ["Dashboard", "/official"],
-    ["Level 1 Registration Class 8", "/official/register/MB"],
-    ["Level 1 Registration Class 10", "/official/register/HS100"],
+    ["Mission Buniyaad Registrations", "/official/register/MB"],
+    ["Haryana Super 100 Registrations", "/official/register/HS100"],
     ["Bulk Registration", "/official/bulk"],
-    ["Mission Buniyaad Level 1 Dashboard", "/official/dashboard/MB"],
-    ["Haryana Super 100 Level 1 Dashboard", "/official/dashboard/HS100"],
+    ...(schoolVisitAccess ? [["School Visit", "/official/school-visits"]] : []),
+    ["Mission Buniyaad Dashboard", "/official/dashboard/MB"],
+    ["Haryana Super 100 Dashboard", "/official/dashboard/HS100"],
     ...(accessibleAllRegistrations.length
       ? [["Registration Management", null], ...accessibleAllRegistrations.map((item) => [item.label, item.path])]
       : []),
     ...(accessibleDashboards.length
       ? [["Level 1 Dashboards", null], ...accessibleDashboards.map((item) => [item.label, item.path])]
+      : []),
+    ...(accessibleReportDashboards.length
+      ? [["Dashboards", null], ...accessibleReportDashboards.map((item) => [item.label, item.path])]
       : []),
     ...(verificationAccess.length ? [["Verification", "/official/verification"]] : []),
   ];

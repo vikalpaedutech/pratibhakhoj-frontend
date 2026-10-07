@@ -21,7 +21,6 @@ const blank = {
   cityTownVillage: "",
   addressBlock: "",
   addressDistrict: "",
-  addressState: "Haryana",
   districtId: "",
   blockDistrictId: "",
   schoolDistrictId: "",
@@ -46,6 +45,8 @@ export default function StudentRegister({ editMode = false, officialMode = false
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [schools, setSchools] = useState([]);
+  const [addressDistricts, setAddressDistricts] = useState([]);
+  const [addressBlocks, setAddressBlocks] = useState([]);
   const [regionAccess, setRegionAccess] = useState([]);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -97,6 +98,27 @@ export default function StudentRegister({ editMode = false, officialMode = false
     () => `${examName} Registration Form`,
     [examName]
   );
+
+  useEffect(() => {
+    api.get("/regions/districts")
+      .then((response) => setAddressDistricts(Array.isArray(unwrap(response)) ? unwrap(response) : []))
+      .catch((err) => setError(err.response?.data?.message || "Unable to load address districts."));
+  }, []);
+
+  useEffect(() => {
+    const selectedDistrict = addressDistricts.find(
+      (district) => String(district.districtName).trim() === String(form.addressDistrict || "").trim()
+    );
+
+    if (!selectedDistrict) {
+      setAddressBlocks([]);
+      return;
+    }
+
+    api.get(`/regions/blocks?districtId=${selectedDistrict._id}`)
+      .then((response) => setAddressBlocks(Array.isArray(unwrap(response)) ? unwrap(response) : []))
+      .catch((err) => setError(err.response?.data?.message || "Unable to load address blocks."));
+  }, [addressDistricts, form.addressDistrict]);
 
   useEffect(() => {
     const districtRequest = officialMode && !allRegistrationsMode
@@ -167,7 +189,6 @@ export default function StudentRegister({ editMode = false, officialMode = false
           cityTownVillage: student.cityTownVillage || "",
           addressBlock: student.addressBlock || "",
           addressDistrict: student.addressDistrict || "",
-          addressState: student.addressState || "Haryana",
           districtId: districtId || "",
           blockDistrictId: blockId || "",
           schoolDistrictId: schoolId || "",
@@ -254,7 +275,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
           motherName: student.motherName || "", dob: student.dob ? String(student.dob).slice(0,10) : "", gender: student.gender || "",
           category: student.category || "", aadhar: student.aadhar || "", mobile: student.mobile || "", whatsapp: student.whatsapp || "",
           houseNumber: student.houseNumber || "", cityTownVillage: student.cityTownVillage || "", addressBlock: student.addressBlock || "",
-          addressDistrict: student.addressDistrict || "", addressState: student.addressState || "Haryana", districtId: districtId || "",
+          addressDistrict: student.addressDistrict || "", districtId: districtId || "",
           blockDistrictId: blockId || "", schoolDistrictId: schoolId || "", previousClassAnnualExamPercentage: student.previousClassAnnualExamPercentage ?? "",
           schoolEntry: student.schoolEntry === "manual" ? "manual" : "db", classOfStudent, registrationStatus: student.verificationStatus || "Pending", registrationRemark: student.registrationFormVerificationRemark || "", studentImage: null, previousClassResult: null,
         });
@@ -537,23 +558,6 @@ export default function StudentRegister({ editMode = false, officialMode = false
               <Field label="Aadhar" value={form.aadhar || ""} inputMode="numeric" maxLength={12} onChange={(e) => setForm({ ...form, aadhar: e.target.value.replace(/\D/g, "").slice(0, 12) })} />
               <Field label="Mobile *" value={form.mobile || ""} inputMode="numeric" maxLength={10} onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) })} required />
               <Field label="WhatsApp" value={form.whatsapp || ""} inputMode="numeric" maxLength={10} onChange={(e) => setForm({ ...form, whatsapp: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
-            </div>
-          </section>
-
-          <section className="form-section">
-            <h3><span className="form-section-number">2</span><span>Address Details</span></h3>
-            <div className="form-grid">
-              <Field label="House Number" value={form.houseNumber || ""} onChange={(e) => setForm({ ...form, houseNumber: e.target.value })} />
-              <Field label="City / Town / Village" value={form.cityTownVillage || ""} onChange={(e) => setForm({ ...form, cityTownVillage: e.target.value })} />
-              <Field label="Address District" value={form.addressDistrict || ""} onChange={(e) => setForm({ ...form, addressDistrict: e.target.value })} />
-              <Field label="Address Block" value={form.addressBlock || ""} onChange={(e) => setForm({ ...form, addressBlock: e.target.value })} />
-              <Field label="State" value={form.addressState || "Haryana"} onChange={(e) => setForm({ ...form, addressState: e.target.value })} />
-            </div>
-          </section>
-
-          <section className="form-section">
-            <h3><span className="form-section-number">3</span><span>School Details</span></h3>
-            <div className="form-grid">
               <Field
                 label={`${classOfStudent === 8 ? "7th" : "10th"} Class Annual Exam %`}
                 type="number"
@@ -563,7 +567,45 @@ export default function StudentRegister({ editMode = false, officialMode = false
                 value={form.previousClassAnnualExamPercentage ?? ""}
                 onChange={(e) => setForm({ ...form, previousClassAnnualExamPercentage: e.target.value })}
               />
+            </div>
+          </section>
 
+          <section className="form-section">
+            <h3><span className="form-section-number">2</span><span>Current Address</span></h3>
+            <div className="form-grid">
+              <Field label="House Number" value={form.houseNumber || ""} onChange={(e) => setForm({ ...form, houseNumber: e.target.value })} />
+              <Field label="City / Town / Village" value={form.cityTownVillage || ""} onChange={(e) => setForm({ ...form, cityTownVillage: e.target.value })} />
+              <label className="field">
+                <span>District</span>
+                <select
+                  value={form.addressDistrict || ""}
+                  onChange={(e) => setForm({ ...form, addressDistrict: e.target.value, addressBlock: "" })}
+                >
+                  <option value="">Select district</option>
+                  {addressDistricts.map((district) => (
+                    <option key={district._id} value={district.districtName}>{district.districtName}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>Block</span>
+                <select
+                  value={form.addressBlock || ""}
+                  onChange={(e) => setForm({ ...form, addressBlock: e.target.value })}
+                  disabled={!form.addressDistrict}
+                >
+                  <option value="">Select block</option>
+                  {addressBlocks.map((block) => (
+                    <option key={block._id} value={block.blockName}>{block.blockName}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className="form-section">
+            <h3><span className="form-section-number">3</span><span>School Details</span></h3>
+            <div className="form-grid">
               <label className="field">
                 <span>School District *</span>
                 <select value={form.districtId || ""} onChange={onDistrict} required>
@@ -748,8 +790,8 @@ export default function StudentRegister({ editMode = false, officialMode = false
               {loading
                 ? "Submitting…"
                 : (editMode || officialStudentId)
-                  ? "Update Registration"
-                  : "Submit Registration"}
+                  ? "Update"
+                  : "Submit"}
             </button>
           </div>
         </form>

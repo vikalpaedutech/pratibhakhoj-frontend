@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { ALL_REGISTRATION_DASHBOARDS } from "../config/dashboardAccess";
+import { ALL_REGISTRATION_DASHBOARDS, REPORT_DASHBOARDS } from "../config/dashboardAccess";
 
 export default function AdminShell({ children }) {
   const { user, role, logout } = useAuth();
@@ -11,11 +11,12 @@ export default function AdminShell({ children }) {
       label: "",
       items: [
         ["Dashboard", "/admin"],
-        ["Level 1 Registration Class 8", "/official/register/MB"],
-        ["Level 1 Registration Class 10", "/official/register/HS100"],
+        ["Mission Buniyaad Registrations", "/official/register/MB"],
+        ["Haryana Super 100 Registrations", "/official/register/HS100"],
         ["Bulk Registration", "/official/bulk"],
-        ["Mission Buniyaad Level 1 Dashboard", "/official/dashboard/MB"],
-        ["Haryana Super 100 Level 1 Dashboard", "/official/dashboard/HS100"],
+        ["School Visit", "/official/school-visits"],
+        ["Mission Buniyaad Dashboard", "/official/dashboard/MB"],
+        ["Haryana Super 100 Dashboard", "/official/dashboard/HS100"],
       ],
     },
     {
@@ -34,6 +35,10 @@ export default function AdminShell({ children }) {
       ],
     },
     {
+      label: "Dashboards",
+      items: REPORT_DASHBOARDS.map((item) => [item.label, item.path]),
+    },
+    {
       label: "Administration",
       items: [
         ["Add Region", "/admin/regions"],
@@ -41,6 +46,7 @@ export default function AdminShell({ children }) {
         ["User Region Access", "/admin/user-region-access"],
         ["Dashboard Access", "/admin/dashboard-access"],
         ["Verification Users", "/admin/verification-users"],
+        ["Permissions", "/admin/permissions"],
       ],
     },
   ];

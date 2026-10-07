@@ -23,7 +23,7 @@ export default function OfficialLogin() {
     setLoading(true);
     try {
       const data = await login(contact, password);
-      navigate(data.role?.code === "ADMIN" ? "/admin" : "/official", { replace: true });
+      navigate("/official", { replace: true });
     } catch (err) {
       const status = err.response?.status;
       const message = err.response?.data?.message || "";

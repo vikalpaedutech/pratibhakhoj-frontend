@@ -22,13 +22,11 @@ export default function OfficialRegister() {
   const [districts, setDistricts] = useState([]);
   const [blocksByDistrict, setBlocksByDistrict] = useState({});
   const [schools, setSchools] = useState([]);
-  const [form, setForm] = useState({ name: "", contact: "", roleId: "" });
+  const [form, setForm] = useState({ name: "", contact: "", email: "", roleId: "" });
   const [districtIds, setDistrictIds] = useState([]);
   const [blockIds, setBlockIds] = useState([]);
   const [schoolSelection, setSchoolSelection] = useState({ districtId: "", blockId: "", schoolId: "" });
   const [stage, setStage] = useState("details");
-  const [otp, setOtp] = useState("");
-  const [dummyOtp, setDummyOtp] = useState("");
   const [registrationToken, setRegistrationToken] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -181,7 +179,7 @@ export default function OfficialRegister() {
     return [];
   };
 
-  const requestOtp = async (event) => {
+  const requestVerificationEmail = async (event) => {
     event.preventDefault();
     setError("");
     setMessage("");
@@ -194,39 +192,28 @@ export default function OfficialRegister() {
     if (scope !== "global" && !regions.length) {
       return setError("Select the region required for your designation.");
     }
-
     if (scope === "block" && !blockIds.length) {
       return setError("Select at least one block.");
     }
 
-    setLoading(true);
-    try {
-      const data = unwrap(await api.post("/auth/register", { ...form, regions }));
-      setDummyOtp(data.otp || "");
-      setStage("otp");
-      setMessage("OTP has been generated. Enter the OTP to verify your mobile number.");
-    } catch (err) {
-      setError(err.response?.data?.message || "Unable to start registration.");
-    } finally {
-      setLoading(false);
-    }
+    setStage("email");
   };
 
-  const verify = async (event) => {
+  const sendVerificationEmail = async (event) => {
     event.preventDefault();
     setError("");
-    setLoading(true);
+    setMessage("");
+    const email = form.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Enter a valid email address.");
 
+    setLoading(true);
     try {
-      const data = unwrap(await api.post("/auth/verify-otp", {
-        contact: form.contact,
-        otp,
-      }));
-      setRegistrationToken(data.registrationToken);
-      setStage("password");
-      setMessage("Mobile number verified. Create your password to finish registration.");
+      const regions = buildRegions();
+      await api.post("/auth/register", { ...form, email, regions });
+      setStage("sent");
+      setMessage("Verification link sent. Please check your email and click the verification button to continue.");
     } catch (err) {
-      setError(err.response?.data?.message || "OTP verification failed.");
+      setError(err.response?.data?.message || "Unable to send the verification email.");
     } finally {
       setLoading(false);
     }
@@ -257,8 +244,6 @@ export default function OfficialRegister() {
 
   const resetRegistration = () => {
     setStage("details");
-    setOtp("");
-    setDummyOtp("");
     setRegistrationToken("");
     setPassword("");
     setConfirmPassword("");
@@ -275,9 +260,9 @@ export default function OfficialRegister() {
         className="auth-card wide official-register-card"
         onSubmit={
           stage === "details"
-            ? requestOtp
-            : stage === "otp"
-              ? verify
+            ? requestVerificationEmail
+            : stage === "email"
+              ? sendVerificationEmail
               : createPassword
         }
       >
@@ -286,20 +271,28 @@ export default function OfficialRegister() {
         <h2>
           {stage === "details"
             ? "Create official account"
-            : stage === "otp"
-              ? "Verify your mobile number"
-              : "Create your password"}
+            : stage === "email"
+              ? "Verify your email address"
+              : stage === "sent"
+                ? "Check your email"
+                : "Create your password"}
         </h2>
 
-        {stage === "otp" && (
+        {stage === "email" && (
           <p className="muted register-stage-text">
-            OTP verification for <strong>{form.contact}</strong>
+            Enter your email address. We will send a verification link to it.
+          </p>
+        )}
+
+        {stage === "sent" && (
+          <p className="muted register-stage-text">
+            A verification link has been sent to <strong>{form.email}</strong>. Open the email and click <strong>Click here to verify your account</strong>.
           </p>
         )}
 
         {stage === "password" && (
           <p className="muted register-stage-text">
-            Your mobile number is verified. Set a secure password to complete your account.
+            Your email is verified. Set a secure password to complete your account.
           </p>
         )}
 
@@ -442,34 +435,36 @@ export default function OfficialRegister() {
             />
 
             <button className="primary full" disabled={loading}>
-              {loading ? "Sending OTP…" : "Get OTP"}
+              Continue
             </button>
           </>
         )}
 
-        {stage === "otp" && (
+        {stage === "email" && (
           <>
-            {dummyOtp && <div className="otp-display">{dummyOtp}</div>}
-
             <Field
-              label="OTP *"
-              inputMode="numeric"
-              maxLength={6}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              label="Email *"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
+              autoComplete="email"
+              placeholder="Enter your email address"
             />
-
             <button className="primary full" disabled={loading}>
-              {loading ? "Verifying…" : "Verify OTP"}
+              {loading ? "Sending verification link…" : "Send Verification Link"}
             </button>
-
-            <button
-              type="button"
-              className="secondary full"
-              onClick={resetRegistration}
-            >
+            <button type="button" className="secondary full" onClick={() => { setStage("details"); setError(""); setMessage(""); }} disabled={loading}>
               Back
+            </button>
+          </>
+        )}
+
+        {stage === "sent" && (
+          <>
+            <div className="success-message">Check your inbox (and spam/junk folder) for the verification email.</div>
+            <button type="button" className="secondary full" onClick={() => setStage("email")}>
+              Change Email / Resend
             </button>
           </>
         )}

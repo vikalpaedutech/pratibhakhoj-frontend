@@ -195,8 +195,8 @@ export default function BulkStudentUpload() {
 
           <div className="bulk-actions">
             <button className="secondary" onClick={download} disabled={!readyForTemplate}>Download Template</button>
-            <label className="file-picker">{file ? file.name : "Choose Excel file"}<input type="file" accept=".xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
-            <button className="primary" onClick={upload} disabled={loading}>{loading ? "Uploading…" : "Upload"}</button>
+            <label className="file-picker">{file ? file.name : "Upload Template"}<input type="file" accept=".xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
+            <button className="primary" onClick={upload} disabled={loading}>{loading ? "Submitting…" : "Submit"}</button>
           </div>
 
           <div className="bulk-note">

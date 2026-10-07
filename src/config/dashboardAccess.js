@@ -49,7 +49,7 @@ export const LEVEL1_DASHBOARDS = [
   },
 ];
 
-export const DASHBOARD_ACCESS_CODES = LEVEL1_DASHBOARDS.map((item) => item.code);
+
 
 export const dashboardCodeFor = (examType, view) => {
   const normalizedExam = String(examType || "").toUpperCase();
@@ -64,20 +64,29 @@ export const ALL_REGISTRATION_DASHBOARDS = [
   {
     code: "MB_ALL_REGISTRATIONS",
     examType: "MB",
-    label: "L1 MB Registrations",
+    label: "Mission Buniyaad Registered Students",
     title: "Mission Buniyaad · All Level 1 Registrations",
     path: "/official/registrations/MB",
   },
   {
     code: "HS100_ALL_REGISTRATIONS",
     examType: "HS100",
-    label: "L1 HS100 Registrations",
+    label: "Haryana Super 100 Registered Students",
     title: "Haryana Super 100 · All Level 1 Registrations",
     path: "/official/registrations/HS100",
   },
 ];
 
 export const ALL_REGISTRATION_ACCESS_CODES = ALL_REGISTRATION_DASHBOARDS.map((item) => item.code);
+
+export const REPORT_DASHBOARDS = [
+  { code: "REGISTRATIONS_BY_USERS", label: "Registrations By Users", title: "Registrations By Users Dashboard", path: "/official/dashboards/registrations-by-users" },
+  { code: "VERIFICATION_BY_USERS", label: "Verification By Users", title: "Verification By Users Dashboard", path: "/official/dashboards/verification-by-users" },
+  { code: "SCHOOL_VISIT_DASHBOARD", label: "School Visit Dashboard", title: "School Visit Dashboard", path: "/official/dashboards/school-visits" },
+];
+
+export const DASHBOARD_ACCESS_CODES = [...LEVEL1_DASHBOARDS.map((item) => item.code), ...ALL_REGISTRATION_DASHBOARDS.map((item) => item.code), ...REPORT_DASHBOARDS.map((item) => item.code)];
+
 
 export const allRegistrationCodeFor = (examType) => {
   const normalizedExam = String(examType || "").toUpperCase();
