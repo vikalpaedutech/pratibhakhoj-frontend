@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, unwrap, API_BASE_URL } from "../api/client";
 import OfficialShell from "../components/OfficialShell";
+import SearchableSelect from "../components/SearchableSelect";
 
 export default function StudentList() {
   const [data, setData] = useState({ students: [], pagination: {} });
@@ -49,11 +50,11 @@ export default function StudentList() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <select value={examType} onChange={(event) => setExamType(event.target.value)}>
+        <SearchableSelect value={examType} onChange={(event) => setExamType(event.target.value)}>
           <option value="">All examinations</option>
           <option value="MB">Mission Buniyaad</option>
           <option value="HS100">Haryana Super 100</option>
-        </select>
+        </SearchableSelect>
         <button className="primary" onClick={load} disabled={loading}>
           {loading ? "Loading…" : "Search"}
         </button>

@@ -7,6 +7,7 @@ import { api, unwrap } from "../api/client";
 import PortalHeader from "../components/PortalHeader";
 import PortalFooter from "../components/PortalFooter";
 import { LEVEL1_DASHBOARDS, dashboardCodeFor } from "../config/dashboardAccess";
+import SearchableSelect from "../components/SearchableSelect";
 
 const EXAMS = {
   MB: { label: "Mission Buniyaad", classLabel: "Class 8" },
@@ -398,9 +399,9 @@ function SchoolDashboard({ examType, exam }) {
   return (
     <DashboardShell examType={examType} exam={exam} current="school">
       <div className="school-dashboard-filter-card">
-        <div className="public-filter-field"><label>District</label><select value={filters.districtId} onChange={(e) => setFilters({ districtId: e.target.value, blockId: "", schoolId: "" })}><option value="">Select District</option>{districts.map((d) => <option key={d._id} value={d._id}>{d.districtName}</option>)}</select></div>
-        <div className="public-filter-field"><label>Block</label><select value={filters.blockId} disabled={!filters.districtId} onChange={(e) => setFilters((old) => ({ ...old, blockId: e.target.value, schoolId: "" }))}><option value="">Select Block</option>{blocks.map((b) => <option key={b._id} value={b._id}>{b.blockName}</option>)}</select></div>
-        <div className="public-filter-field"><label>School</label><select value={filters.schoolId} disabled={!filters.blockId} onChange={(e) => setFilters((old) => ({ ...old, schoolId: e.target.value }))}><option value="">Select School</option>{schools.map((s) => <option key={s._id} value={s._id}>{s.schoolName}</option>)}</select></div>
+        <div className="public-filter-field"><label>District</label><SearchableSelect value={filters.districtId} onChange={(e) => setFilters({ districtId: e.target.value, blockId: "", schoolId: "" })}><option value="">Select District</option>{districts.map((d) => <option key={d._id} value={d._id}>{d.districtName}</option>)}</SearchableSelect></div>
+        <div className="public-filter-field"><label>Block</label><SearchableSelect value={filters.blockId} disabled={!filters.districtId} onChange={(e) => setFilters((old) => ({ ...old, blockId: e.target.value, schoolId: "" }))}><option value="">Select Block</option>{blocks.map((b) => <option key={b._id} value={b._id}>{b.blockName}</option>)}</SearchableSelect></div>
+        <div className="public-filter-field"><label>School</label><SearchableSelect value={filters.schoolId} disabled={!filters.blockId} onChange={(e) => setFilters((old) => ({ ...old, schoolId: e.target.value }))}><option value="">Select School</option>{schools.map((s) => <option key={s._id} value={s._id}>{s.schoolName}</option>)}</SearchableSelect></div>
         <button className="primary public-filter-button" onClick={loadStudents} disabled={loading || loadingRegions || !filters.schoolId}>{loading ? "Loading…" : "View Students"}</button>
       </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import OfficialShell from "../components/OfficialShell";
 import { api, unwrap } from "../api/client";
+import SearchableSelect from "../components/SearchableSelect";
 
 const EXAMS = {
   MB: { label: "Mission Buniyaad", classOfStudent: 8 },
@@ -159,10 +160,10 @@ export default function BulkStudentUpload() {
           <div className="form-grid">
             <label className="field">
               <span>Examination *</span>
-              <select value={examType} onChange={(e) => setExamType(e.target.value)}>
+              <SearchableSelect value={examType} onChange={(e) => setExamType(e.target.value)}>
                 <option value="MB">Mission Buniyaad · Class 8</option>
                 <option value="HS100">Haryana Super 100 · Class 10</option>
-              </select>
+              </SearchableSelect>
             </label>
             <label className="field">
               <span>No. of students *</span>
@@ -170,24 +171,24 @@ export default function BulkStudentUpload() {
             </label>
             <label className="field">
               <span>Select District *</span>
-              <select value={form.districtId} onChange={onDistrict}>
+              <SearchableSelect value={form.districtId} onChange={onDistrict}>
                 <option value="">Select district</option>
                 {availableDistricts.map((d) => <option key={d._id} value={d._id}>{d.districtName}</option>)}
-              </select>
+              </SearchableSelect>
             </label>
             <label className="field">
               <span>Select Block *</span>
-              <select value={form.blockId} onChange={onBlock} disabled={!form.districtId}>
+              <SearchableSelect value={form.blockId} onChange={onBlock} disabled={!form.districtId}>
                 <option value="">Select block</option>
                 {availableBlocks.map((b) => <option key={b._id} value={b._id}>{b.blockName}</option>)}
-              </select>
+              </SearchableSelect>
             </label>
             <label className="field">
               <span>Select School *</span>
-              <select value={form.schoolId} onChange={(e) => setForm({ ...form, schoolId: e.target.value })} disabled={!form.blockId}>
+              <SearchableSelect value={form.schoolId} onChange={(e) => setForm({ ...form, schoolId: e.target.value })} disabled={!form.blockId}>
                 <option value="">Select school</option>
                 {availableSchools.map((s) => <option key={s._id} value={s._id}>{s.schoolName}</option>)}
-              </select>
+              </SearchableSelect>
             </label>
           </div>
 

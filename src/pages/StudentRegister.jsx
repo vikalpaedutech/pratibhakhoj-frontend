@@ -5,6 +5,7 @@ import PortalHeader from "../components/PortalHeader";
 import PortalFooter from "../components/PortalFooter";
 import OfficialShell from "../components/OfficialShell";
 import { api, unwrap } from "../api/client";
+import SearchableSelect from "../components/SearchableSelect";
 
 const blank = {
   studentSrn: "",
@@ -515,7 +516,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
       <section className="student-form-page">
         <div className="form-intro">
           <div className="form-intro-centered">
-            <h2>{pageTitle} (2028-29)</h2>
+            <h2>{pageTitle} (2027-29)</h2>
             <p className="form-srn-line">Class {classOfStudent} · SRN <strong>{srn || form.studentSrn}</strong></p>
           </div>
         </div>
@@ -535,24 +536,24 @@ export default function StudentRegister({ editMode = false, officialMode = false
 
               <label className="field">
                 <span>Gender *</span>
-                <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} required>
+                <SearchableSelect value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} required>
                   <option value="">Select gender</option>
                   <option>Male</option>
                   <option>Female</option>
                   <option>Other</option>
-                </select>
+                </SearchableSelect>
               </label>
 
               <label className="field">
                 <span>Category *</span>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
+                <SearchableSelect value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
                   <option value="">Select category</option>
                   <option>General</option>
                   <option>SC</option>
                   <option>BC-A</option>
                   <option>BC-B</option>
                   <option>Other</option>
-                </select>
+                </SearchableSelect>
               </label>
 
               <Field label="Aadhar" value={form.aadhar || ""} inputMode="numeric" maxLength={12} onChange={(e) => setForm({ ...form, aadhar: e.target.value.replace(/\D/g, "").slice(0, 12) })} />
@@ -577,7 +578,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
               <Field label="City / Town / Village" value={form.cityTownVillage || ""} onChange={(e) => setForm({ ...form, cityTownVillage: e.target.value })} />
               <label className="field">
                 <span>District</span>
-                <select
+                <SearchableSelect
                   value={form.addressDistrict || ""}
                   onChange={(e) => setForm({ ...form, addressDistrict: e.target.value, addressBlock: "" })}
                 >
@@ -585,11 +586,11 @@ export default function StudentRegister({ editMode = false, officialMode = false
                   {addressDistricts.map((district) => (
                     <option key={district._id} value={district.districtName}>{district.districtName}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </label>
               <label className="field">
                 <span>Block</span>
-                <select
+                <SearchableSelect
                   value={form.addressBlock || ""}
                   onChange={(e) => setForm({ ...form, addressBlock: e.target.value })}
                   disabled={!form.addressDistrict}
@@ -598,7 +599,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
                   {addressBlocks.map((block) => (
                     <option key={block._id} value={block.blockName}>{block.blockName}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </label>
             </div>
           </section>
@@ -608,28 +609,28 @@ export default function StudentRegister({ editMode = false, officialMode = false
             <div className="form-grid">
               <label className="field">
                 <span>School District *</span>
-                <select value={form.districtId || ""} onChange={onDistrict} required>
+                <SearchableSelect value={form.districtId || ""} onChange={onDistrict} required>
                   <option value="">Select district</option>
                   {availableDistricts.map((district) => (
                     <option key={district._id} value={district._id}>{district.districtName}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </label>
 
               <label className="field">
                 <span>School Block *</span>
-                <select value={form.blockDistrictId || ""} onChange={onBlock} required>
+                <SearchableSelect value={form.blockDistrictId || ""} onChange={onBlock} required>
                   <option value="">Select block</option>
                   {availableBlocks.map((block) => (
                     <option key={block._id} value={block._id}>{block.blockName}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </label>
 
               {!manualSchoolName && form.schoolEntry !== "manual" ? (
                 <label className="field">
                   <span>School *</span>
-                  <select
+                  <SearchableSelect
                     value={form.schoolDistrictId || ""}
                     onChange={(e) => setForm({ ...form, schoolDistrictId: e.target.value })}
                     required={form.schoolEntry !== "manual"}
@@ -638,7 +639,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
                     {availableSchools.map((school) => (
                       <option key={school._id} value={school._id}>{school.schoolName}</option>
                     ))}
-                  </select>
+                  </SearchableSelect>
                 </label>
               ) : null}
 

@@ -5,6 +5,7 @@ import ReactSelect from "../components/ReactSelect";
 import PortalHeader from "../components/PortalHeader";
 import PortalFooter from "../components/PortalFooter";
 import { api, unwrap } from "../api/client";
+import SearchableSelect from "../components/SearchableSelect";
 
 const ROLE_SCOPE = {
   ACI: "district",
@@ -308,7 +309,7 @@ export default function OfficialRegister() {
 
               <label className="field">
                 <span>Role *</span>
-                <select
+                <SearchableSelect
                   value={form.roleId}
                   onChange={(e) => handleRole(e.target.value)}
                   required
@@ -319,7 +320,7 @@ export default function OfficialRegister() {
                       {role.name}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </label>
             </div>
 

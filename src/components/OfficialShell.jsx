@@ -57,7 +57,7 @@ export default function OfficialShell({ children }) {
       <aside className={`portal-sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="sidebar-brand">
           <img src="/Buniyaad.png" alt="Pratibha Khoj" />
-          <div><strong>Pratibha Khoj</strong><span>2028-29</span></div>
+          <div><strong>Pratibha Khoj</strong><span>2027-29</span></div>
         </div>
 
         <div className="sidebar-user">

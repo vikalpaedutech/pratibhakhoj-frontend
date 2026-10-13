@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminShell from "../../components/AdminShell";
 import { api, unwrap } from "../../api/client";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const EMPTY = {
   targetType: "role",
@@ -190,7 +191,7 @@ export default function AdminPermissions() {
 
           <label className="field permission-target-select">
             <span>{targetType === "role" ? "Role *" : "User *"}</span>
-            <select
+            <SearchableSelect
               value={targetId}
               onChange={(event) => loadTarget(targetType, event.target.value)}
             >
@@ -204,7 +205,7 @@ export default function AdminPermissions() {
                     : `${item.name} · ${item.contact}${item.userId ? ` · ${item.userId}` : ""}`}
                 </option>
               ))}
-            </select>
+            </SearchableSelect>
           </label>
 
           {targetType === "role" && selectedRole && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminShell from "../../components/AdminShell";
 import { api, unwrap } from "../../api/client";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const DASHBOARDS = [
   ["MB_DISTRICT_BLOCK", "Mission Buniyaad · District-Block Dashboard"],
@@ -107,7 +108,7 @@ export default function AdminUserRegionAccess() {
         <div className="panel">
           <label className="field">
             <span>User *</span>
-            <select
+            <SearchableSelect
               value={userId}
               onChange={(e) => {
                 const id = e.target.value;
@@ -123,12 +124,12 @@ export default function AdminUserRegionAccess() {
                   {u.name} · {u.contact}
                 </option>
               ))}
-            </select>
+            </SearchableSelect>
           </label>
 
           <label className="field">
             <span>Scope *</span>
-            <select
+            <SearchableSelect
               value={scope}
               onChange={(e) => {
                 setScope(e.target.value);
@@ -141,7 +142,7 @@ export default function AdminUserRegionAccess() {
               <option value="district">district</option>
               <option value="block">block</option>
               <option value="school">school</option>
-            </select>
+            </SearchableSelect>
           </label>
 
           {scope === "global" ? (
@@ -151,7 +152,7 @@ export default function AdminUserRegionAccess() {
               {scope === "district" && (
                 <label className="field">
                   <span>District *</span>
-                  <select
+                  <SearchableSelect
                     value={regions[0]?.districtId || ""}
                     onChange={(e) => districtChange(e.target.value)}
                   >
@@ -161,7 +162,7 @@ export default function AdminUserRegionAccess() {
                         {d.districtName}
                       </option>
                     ))}
-                  </select>
+                  </SearchableSelect>
                 </label>
               )}
 
@@ -169,7 +170,7 @@ export default function AdminUserRegionAccess() {
                 <>
                   <label className="field">
                     <span>District *</span>
-                    <select
+                    <SearchableSelect
                       value={regions[0]?.districtId || ""}
                       onChange={(e) => districtChange(e.target.value)}
                     >
@@ -179,12 +180,12 @@ export default function AdminUserRegionAccess() {
                           {d.districtName}
                         </option>
                       ))}
-                    </select>
+                    </SearchableSelect>
                   </label>
 
                   <label className="field">
                     <span>Block *</span>
-                    <select
+                    <SearchableSelect
                       value={regions[0]?.blockId || ""}
                       disabled={!regions[0]?.districtId}
                       onChange={(e) => blockChange(e.target.value)}
@@ -195,7 +196,7 @@ export default function AdminUserRegionAccess() {
                           {b.blockName}
                         </option>
                       ))}
-                    </select>
+                    </SearchableSelect>
                   </label>
                 </>
               )}
@@ -203,7 +204,7 @@ export default function AdminUserRegionAccess() {
               {scope === "school" && (
                 <label className="field">
                   <span>School *</span>
-                  <select
+                  <SearchableSelect
                     value={regions[0]?.schoolId || ""}
                     disabled={!regions[0]?.blockId}
                     onChange={(e) =>
@@ -216,7 +217,7 @@ export default function AdminUserRegionAccess() {
                         {x.schoolName}
                       </option>
                     ))}
-                  </select>
+                  </SearchableSelect>
                 </label>
               )}
             </>

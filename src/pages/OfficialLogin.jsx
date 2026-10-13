@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Field from "../components/Field";
 import PortalHeader from "../components/PortalHeader";
 import PortalFooter from "../components/PortalFooter";
@@ -12,6 +12,7 @@ export default function OfficialLogin() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleContactChange = (event) => {
     setContact(event.target.value.slice(0, 50));
@@ -69,6 +70,10 @@ export default function OfficialLogin() {
           required
           autoComplete="current-password"
         />
+
+        {location.state?.message && <div className="success">{location.state.message}</div>}
+
+        <div className="login-forgot-password"><Link to="/official/forgot-password">Forgot password?</Link></div>
 
         <button className="primary full" disabled={loading} type="submit">
           {loading ? "Signing in…" : "Login"}

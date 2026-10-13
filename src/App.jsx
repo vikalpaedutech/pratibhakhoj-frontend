@@ -26,6 +26,7 @@ import RegistrationsByUsers from "./pages/RegistrationsByUsers";
 import VerificationByUsers from "./pages/VerificationByUsers";
 import SchoolVisitDashboard from "./pages/SchoolVisitDashboard";
 import { useAuth } from "./context/AuthContext";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function Protected({ children, admin = false, schoolVisit = false, dashboardCode = "" }) {
   const { user, role, loading, schoolVisitAccess, dashboardAccess = [] } = useAuth();
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/dashboards-level-1/:examType" element={<PublicLevel1Dashboard />} />
         <Route path="/dashboards-level-1/:examType/:view" element={<PublicLevel1Dashboard />} />
         <Route path="/official/login" element={<OfficialLogin />} />
+        <Route path="/official/forgot-password" element={<ForgotPassword />} />
         <Route path="/official/register" element={<OfficialRegister />} />
         <Route path="/official/verify-otp" element={<VerifyOtp />} />
         <Route path="/official/verify-email" element={<VerifyEmail />} />

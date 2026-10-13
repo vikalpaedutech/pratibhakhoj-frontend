@@ -18,7 +18,7 @@ export default function PortalHeader({ examType = null }) {
             <>
               <h1>Mission Buniyaad</h1>
               <div className="portal-subtitle">Registration Form</div>
-              <div className="portal-batch">Batch 2026-28</div>
+              <div className="portal-batch">Batch 2027-29</div>
             </>
           )}
 
@@ -26,7 +26,7 @@ export default function PortalHeader({ examType = null }) {
             <>
               <h1>Haryana Super 100</h1>
               <div className="portal-subtitle">Registration Form</div>
-              <div className="portal-batch">Batch 2026-28</div>
+              <div className="portal-batch">Batch 2027-29</div>
             </>
           )}
 
@@ -35,7 +35,7 @@ export default function PortalHeader({ examType = null }) {
               <h1>Mission Buniyaad</h1>
               <h2>Haryana Super 100</h2>
               <div className="portal-subtitle">Registration Form</div>
-              <div className="portal-batch">Batch 2026-28</div>
+              <div className="portal-batch">Batch 2027-29</div>
             </>
           )}
         </div>

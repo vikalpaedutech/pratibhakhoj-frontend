@@ -1,0 +1,8 @@
+Updates from document 18.docx
+1. Corrected visible exam-session labels to 2027-29.
+2. Replaced native select controls with searchable react-select controls; options are sorted alphabetically.
+3. Added official-account forgot/reset password flow. Reset links are emailed to the account's registered email via existing Brevo configuration and expire after 30 minutes.
+
+Setup note:
+Because react-select is a new frontend dependency, run `npm install` inside `frontend` before running/building the app. The environment used to prepare this archive could not reach npm registry to refresh package-lock.json. Run `npm install` to sync package-lock.json locally before using `npm ci` in later deployments.
+Password reset uses the existing FRONTEND_ORIGINS and BREVO_API_KEY / BREVO_FROM_EMAIL settings in backend/.env.

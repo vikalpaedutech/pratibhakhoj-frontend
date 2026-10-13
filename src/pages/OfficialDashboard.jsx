@@ -70,7 +70,7 @@ export default function OfficialDashboard() {
         <div className="dashboard-count-grid official-level-grid">
           {data && cards.map((type) => (
             <Link className="count-card official-level-card official-level-card-link" key={type} to={`/official/dashboard/${type}`}>
-              <span>{EXAMS[type].name} (2028-29)</span>
+              <span>{EXAMS[type].name} (2027-29)</span>
               <strong>{counts[type]}</strong>
               <small>Level 1 Registration Count · Class {EXAMS[type].classOfStudent}</small><strong className="official-level-card-label">{EXAMS[type].name} Dashboard</strong>
             </Link>

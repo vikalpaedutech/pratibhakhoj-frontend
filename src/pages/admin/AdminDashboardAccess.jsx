@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AdminShell from "../../components/AdminShell";
 import { api, unwrap } from "../../api/client";
 import { LEVEL1_DASHBOARDS, ALL_REGISTRATION_DASHBOARDS, REPORT_DASHBOARDS } from "../../config/dashboardAccess";
+import SearchableSelect from "../../components/SearchableSelect";
 
 export default function AdminDashboardAccess() {
   const [mode, setMode] = useState("user");
@@ -72,10 +73,10 @@ export default function AdminDashboardAccess() {
           </div>
           <label className="field">
             <span>{mode === "role" ? "Role *" : "User *"}</span>
-            <select value={targetId} onChange={(event) => loadAccess(event.target.value)}>
+            <SearchableSelect value={targetId} onChange={(event) => loadAccess(event.target.value)}>
               <option value="">Select {mode}</option>
               {mode === "user" ? selectableUsers.map((user) => <option key={user._id} value={user._id}>{user.name} · {user.contact} · {user.roleId?.name || "No role"}</option>) : selectableRoles.map((role) => <option key={role._id} value={role._id}>{role.name} · {role.code}</option>)}
-            </select>
+            </SearchableSelect>
           </label>
         </div>
 

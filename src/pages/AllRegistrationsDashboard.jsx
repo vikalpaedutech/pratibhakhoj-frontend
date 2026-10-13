@@ -4,6 +4,7 @@ import OfficialShell from "../components/OfficialShell";
 import { api, unwrap, API_BASE_URL } from "../api/client";
 import { allRegistrationCodeFor } from "../config/dashboardAccess";
 import { useAuth } from "../context/AuthContext";
+import SearchableSelect from "../components/SearchableSelect";
 
 const EXAMS = {
   MB: { label: "Mission Buniyaad", classOfStudent: 8 },
@@ -146,18 +147,18 @@ export default function AllRegistrationsDashboard() {
             <>
               <div className="level1-filters">
                 <input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} placeholder="Search name, SRN, father" />
-                <select value={filters.districtId} onChange={(e) => setFilters({ ...filters, districtId: e.target.value, blockId: "", schoolId: "" })}>
+                <SearchableSelect value={filters.districtId} onChange={(e) => setFilters({ ...filters, districtId: e.target.value, blockId: "", schoolId: "" })}>
                   <option value="">District</option>
                   {districts.map((district) => <option key={district._id} value={district._id}>{district.districtName}</option>)}
-                </select>
-                <select value={filters.blockId} disabled={!filters.districtId} onChange={(e) => setFilters({ ...filters, blockId: e.target.value, schoolId: "" })}>
+                </SearchableSelect>
+                <SearchableSelect value={filters.blockId} disabled={!filters.districtId} onChange={(e) => setFilters({ ...filters, blockId: e.target.value, schoolId: "" })}>
                   <option value="">Block</option>
                   {blocks.map((block) => <option key={block._id} value={block._id}>{block.blockName}</option>)}
-                </select>
-                <select value={filters.schoolId} disabled={!filters.blockId} onChange={(e) => setFilters({ ...filters, schoolId: e.target.value })}>
+                </SearchableSelect>
+                <SearchableSelect value={filters.schoolId} disabled={!filters.blockId} onChange={(e) => setFilters({ ...filters, schoolId: e.target.value })}>
                   <option value="">School</option>
                   {schools.map((school) => <option key={school._id} value={school._id}>{school.schoolName}</option>)}
-                </select>
+                </SearchableSelect>
                 <button className="secondary" onClick={load} disabled={loading}>{loading ? "Loading…" : "Search"}</button>
               </div>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AdminShell from "../../components/AdminShell";
 import ReactSelect from "../../components/ReactSelect";
 import { api, unwrap } from "../../api/client";
+import SearchableSelect from "../../components/SearchableSelect";
 
 const EMPTY_FORM = { userId: "", examType: [], region: [] };
 
@@ -143,12 +144,12 @@ export default function AdminVerificationUsers() {
           <div className="toolbar verification-user-toolbar">
             <label className="field verification-role-filter">
               <span>Role *</span>
-              <select value={roleId} onChange={(event) => setRoleId(event.target.value)}>
+              <SearchableSelect value={roleId} onChange={(event) => setRoleId(event.target.value)}>
                 <option value="">Select role</option>
                 {roles.map((role) => (
                   <option key={role._id} value={role._id}>{role.name}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </label>
             <label className="field verification-search-field">
               <span>Search user</span>

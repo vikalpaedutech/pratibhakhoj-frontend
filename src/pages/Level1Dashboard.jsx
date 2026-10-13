@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import OfficialShell from "../components/OfficialShell";
 import { api, unwrap, API_BASE_URL } from "../api/client";
+import SearchableSelect from "../components/SearchableSelect";
 
 const EXAMS = {
   MB: { label: "Mission Buniyaad", classOfStudent: 8 },
@@ -113,18 +114,18 @@ export default function Level1Dashboard() {
 
           <div className="level1-filters">
             <input value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} placeholder="Search name, SRN, father" />
-            <select value={filters.districtId} onChange={(e) => setFilters({ ...filters, districtId: e.target.value, blockId: "", schoolId: "" })}>
+            <SearchableSelect value={filters.districtId} onChange={(e) => setFilters({ ...filters, districtId: e.target.value, blockId: "", schoolId: "" })}>
               <option value="">District</option>
               {visibleDistricts.map((d) => <option key={d._id} value={d._id}>{d.districtName}</option>)}
-            </select>
-            <select value={filters.blockId} disabled={!filters.districtId} onChange={(e) => setFilters({ ...filters, blockId: e.target.value, schoolId: "" })}>
+            </SearchableSelect>
+            <SearchableSelect value={filters.blockId} disabled={!filters.districtId} onChange={(e) => setFilters({ ...filters, blockId: e.target.value, schoolId: "" })}>
               <option value="">Block</option>
               {visibleBlocks.map((b) => <option key={b._id} value={b._id}>{b.blockName}</option>)}
-            </select>
-            <select value={filters.schoolId} disabled={!filters.blockId} onChange={(e) => setFilters({ ...filters, schoolId: e.target.value })}>
+            </SearchableSelect>
+            <SearchableSelect value={filters.schoolId} disabled={!filters.blockId} onChange={(e) => setFilters({ ...filters, schoolId: e.target.value })}>
               <option value="">School</option>
               {visibleSchools.map((s) => <option key={s._id} value={s._id}>{s.schoolName}</option>)}
-            </select>
+            </SearchableSelect>
             <button className="secondary" onClick={load} disabled={loading}>{loading ? "Loading…" : "Search"}</button>
           </div>
 
