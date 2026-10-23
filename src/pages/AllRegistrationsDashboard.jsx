@@ -27,6 +27,7 @@ export default function AllRegistrationsDashboard() {
   const [selected, setSelected] = useState(new Set());
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [bulkAckLoading, setBulkAckLoading] = useState(false);
   const [error, setError] = useState("");
 
   const districtMap = useMemo(() => new Map(districts.map((item) => [String(item._id), item])), [districts]);
@@ -99,25 +100,29 @@ export default function AllRegistrationsDashboard() {
   });
 
   const bulkAck = async () => {
-    if (!selected.size) return;
+    if (!selected.size || bulkAckLoading) return;
+    setBulkAckLoading(true);
     setError("");
     try {
       const response = await api.post(
         "/students/bulk/acknowledgements",
         { studentIds: [...selected], examType: code, allRegistrations: true },
-        { responseType: "blob" }
+        { responseType: "blob", timeout: 120000 }
       );
       const url = URL.createObjectURL(response.data);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${code}-all-level1-student_acknowledgements.zip`;
+      anchor.download = `${code}-student_acknowledgements.zip`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err.response?.data?.message || "Unable to download acknowledgements.");
-    }
+      let message = "Unable to download acknowledgements.";
+      if (err.response?.data instanceof Blob) { try { const payload = JSON.parse(await err.response.data.text()); message = payload.message || message; } catch {} }
+      else message = err.response?.data?.message || message;
+      setError(message);
+    } finally { setBulkAckLoading(false); }
   };
 
   if (authLoading) return <div className="loading">Loading dashboard access…</div>;
@@ -128,12 +133,12 @@ export default function AllRegistrationsDashboard() {
         <div className="level1-panel">
           <div className="level1-toolbar-head">
             <div>
-              <div className="eyebrow">LEVEL 1 · {exam.label.toUpperCase()} · ALL REGISTRATIONS</div>
-              <h1>{exam.label} Level 1 Registrations</h1>
-              {/* <p className="dashboard-access-inherited-note">This screen is independent of region access and shows all active Level 1 registrations for this examination.</p> */}
+              <div className="eyebrow">{exam.label.toUpperCase()} · ALL REGISTRATIONS</div>
+              <h1>{exam.label} Registrations</h1>
+              {/* <p className="dashboard-access-inherited-note">This screen is independent of region access and shows all active registrations for this examination.</p> */}
             </div>
-            <button className="primary" onClick={bulkAck} disabled={!selected.size || !isAllowed}>
-              Download Bulk ACK
+            <button className="primary" onClick={bulkAck} disabled={!selected.size || !isAllowed || bulkAckLoading}>
+              {bulkAckLoading ? <><span className="button-spinner" aria-hidden="true" />Preparing slips…</> : "Download All Slip"}
             </button>
           </div>
 
@@ -141,7 +146,7 @@ export default function AllRegistrationsDashboard() {
             <div className="panel">
               <div className="eyebrow">ACCESS CONTROL</div>
               <h2>Registration screen access required</h2>
-              <p>You do not currently have access to all {exam.label} Level 1 registrations. Please contact an administrator.</p>
+              <p>You do not currently have access to all {exam.label} registrations. Please contact an administrator.</p>
             </div>
           ) : (
             <>

@@ -67,7 +67,7 @@ function DashboardCards() {
   const content = (
     <section className="public-level1-page">
       <div className="public-level1-intro">
-        <div className="eyebrow">LEVEL 1 DASHBOARDS</div>
+        <div className="eyebrow">DASHBOARDS</div>
         <h1>Registration Dashboards</h1>
         <p>Choose an examination to view registration data.</p>
       </div>
@@ -75,7 +75,7 @@ function DashboardCards() {
       {user && role?.code !== "ADMIN" && !visibleDashboards.length ? (
         <div className="panel">
           <div className="eyebrow">ACCESS CONTROL</div>
-          <h2>No Level 1 dashboards assigned</h2>
+          <h2>No dashboards assigned</h2>
           <p>An administrator must grant dashboard access before these dashboards appear for your account.</p>
         </div>
       ) : (
@@ -488,7 +488,7 @@ function DashboardShell({ examType, exam, current, children }) {
     <section className="public-level1-page">
       <div className="public-level1-detail-head public-dashboard-detail-head">
         <div>
-          <div className="eyebrow">LEVEL 1 · {exam.label.toUpperCase()}</div>
+          <div className="eyebrow">{exam.label.toUpperCase()}</div>
           <h1>{exam.label} · {dashboardLabel}</h1>
           <p>{exam.classLabel} registration dashboard.</p>
         </div>

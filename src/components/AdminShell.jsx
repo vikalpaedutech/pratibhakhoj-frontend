@@ -24,7 +24,7 @@ export default function AdminShell({ children }) {
       items: ALL_REGISTRATION_DASHBOARDS.map((item) => [item.label, item.path]),
     },
     {
-      label: "Level 1 Dashboards",
+      label: "Program Dashboards",
       items: [
         ["MB · District-Block", "/dashboards-level-1/MB"],
         ["MB · Block-School", "/dashboards-level-1/MB/block-school"],
@@ -47,6 +47,7 @@ export default function AdminShell({ children }) {
         ["Dashboard Access", "/admin/dashboard-access"],
         ["Verification Users", "/admin/verification-users"],
         ["Permissions", "/admin/permissions"],
+        ["Exam Controller", "/admin/exam-controller"],
       ],
     },
   ];

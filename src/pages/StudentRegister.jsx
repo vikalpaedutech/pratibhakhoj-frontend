@@ -181,7 +181,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
           fatherName: student.fatherName || "",
           motherName: student.motherName || "",
           dob: student.dob ? String(student.dob).slice(0, 10) : "",
-          gender: student.gender || "",
+          gender: ({ Male: "Boy", Female: "Girl", male: "Boy", female: "Girl" })[student.gender] || student.gender || "",
           category: student.category || "",
           aadhar: student.aadhar || "",
           mobile: student.mobile || "",
@@ -273,7 +273,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
         setExistingFiles({ studentImage: student.studentImage || null, previousClassResult: student.previousClassResult || null });
         setForm({
           ...blank, studentSrn: student.studentSrn || srn, name: student.name || "", fatherName: student.fatherName || "",
-          motherName: student.motherName || "", dob: student.dob ? String(student.dob).slice(0,10) : "", gender: student.gender || "",
+          motherName: student.motherName || "", dob: student.dob ? String(student.dob).slice(0,10) : "", gender: ({ Male: "Boy", Female: "Girl", male: "Boy", female: "Girl" })[student.gender] || student.gender || "",
           category: student.category || "", aadhar: student.aadhar || "", mobile: student.mobile || "", whatsapp: student.whatsapp || "",
           houseNumber: student.houseNumber || "", cityTownVillage: student.cityTownVillage || "", addressBlock: student.addressBlock || "",
           addressDistrict: student.addressDistrict || "", districtId: districtId || "",
@@ -538,9 +538,9 @@ export default function StudentRegister({ editMode = false, officialMode = false
                 <span>Gender *</span>
                 <SearchableSelect value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} required>
                   <option value="">Select gender</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Other</option>
+                  <option value="Girl">Girl</option>
+                  <option value="Boy">Boy</option>
+                  <option value="Other">Other</option>
                 </SearchableSelect>
               </label>
 

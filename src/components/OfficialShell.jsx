@@ -31,7 +31,7 @@ export default function OfficialShell({ children }) {
       ? [["Registration Management", null], ...accessibleAllRegistrations.map((item) => [item.label, item.path])]
       : []),
     ...(accessibleDashboards.length
-      ? [["Level 1 Dashboards", null], ...accessibleDashboards.map((item) => [item.label, item.path])]
+      ? [["Dashboards", null], ...accessibleDashboards.map((item) => [item.label, item.path])]
       : []),
     ...(accessibleReportDashboards.length
       ? [["Dashboards", null], ...accessibleReportDashboards.map((item) => [item.label, item.path])]

@@ -31,6 +31,7 @@ export default function Level1Dashboard() {
   const [filters, setFilters] = useState({ search: "", districtId: "", blockId: "", schoolId: "" });
   const [selected, setSelected] = useState(new Set());
   const [loading, setLoading] = useState(false);
+  const [bulkAckLoading, setBulkAckLoading] = useState(false);
   const [error, setError] = useState("");
 
   const visibleDistricts = useMemo(() => allowed(districts, access, "district"), [districts, access]);
@@ -90,14 +91,18 @@ export default function Level1Dashboard() {
   const toggleOne = (id) => setSelected((old) => { const next = new Set(old); const key = String(id); if (next.has(key)) next.delete(key); else next.add(key); return next; });
 
   const bulkAck = async () => {
-    if (!selected.size) return;
+    if (!selected.size || bulkAckLoading) return;
+    setBulkAckLoading(true); setError("");
     try {
-      const response = await api.post("/students/bulk/acknowledgements", { studentIds: [...selected], examType }, { responseType: "blob" });
+      const response = await api.post("/students/bulk/acknowledgements", { studentIds: [...selected], examType }, { responseType: "blob", timeout: 120000 });
       const url = URL.createObjectURL(response.data);
       const a = document.createElement("a"); a.href = url; a.download = `${examType}-student_acknowledgements.zip`; a.click(); URL.revokeObjectURL(url);
     } catch (e) {
-      setError(e.response?.data?.message || "Unable to download acknowledgements.");
-    }
+      let message = "Unable to download acknowledgements.";
+      if (e.response?.data instanceof Blob) { try { const payload = JSON.parse(await e.response.data.text()); message = payload.message || message; } catch {} }
+      else message = e.response?.data?.message || message;
+      setError(message);
+    } finally { setBulkAckLoading(false); }
   };
 
   return (
@@ -106,10 +111,10 @@ export default function Level1Dashboard() {
         <div className="level1-panel">
           <div className="level1-toolbar-head">
             <div>
-              <div className="eyebrow">LEVEL 1 · {exam.label.toUpperCase()}</div>
-              <h1>{exam.label} Level 1 Dashboard</h1>
+              <div className="eyebrow">{exam.label.toUpperCase()}</div>
+              <h1>{exam.label} Dashboard</h1>
             </div>
-            <button className="primary" onClick={bulkAck} disabled={!selected.size}>Download Bulk ACK</button>
+            <button className="primary" onClick={bulkAck} disabled={!selected.size || bulkAckLoading}>{bulkAckLoading ? <><span className="button-spinner" aria-hidden="true" />Preparing slips…</> : "Download All Slip"}</button>
           </div>
 
           <div className="level1-filters">
