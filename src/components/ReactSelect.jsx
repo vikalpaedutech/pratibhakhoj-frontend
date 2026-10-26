@@ -41,10 +41,13 @@ export default function ReactSelect({
         isDisabled={isDisabled}
         isMulti={isMulti}
         isSearchable
+        menuPortalTarget={typeof document !== "undefined" ? document.body : undefined}
+        menuPosition="fixed"
         isClearable={!isMulti}
         closeMenuOnSelect={!isMulti}
         styles={{
-          menu: (base) => ({ ...base, zIndex: 1000 }),
+          menu: (base) => ({ ...base, zIndex: 10000 }),
+          menuPortal: (base) => ({ ...base, zIndex: 10000 }),
           control: (base, state) => ({
             ...base,
             minHeight: 42,

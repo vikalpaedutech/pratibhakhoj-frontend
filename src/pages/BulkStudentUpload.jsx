@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import OfficialShell from "../components/OfficialShell";
 import { api, unwrap } from "../api/client";
 import SearchableSelect from "../components/SearchableSelect";
+import * as XLSX from "xlsx";
 
 const EXAMS = {
   MB: { label: "Mission Buniyaad", classOfStudent: 8 },
@@ -34,12 +35,13 @@ export default function BulkStudentUpload() {
   const [blocks, setBlocks] = useState([]);
   const [schools, setSchools] = useState([]);
   const [access, setAccess] = useState([]);
-  const [form, setForm] = useState({ districtId: "", blockId: "", schoolId: "", count: 10 });
+  const [form, setForm] = useState({ districtId: "", blockId: "", schoolId: "", count: "" });
   const [file, setFile] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [countTouched, setCountTouched] = useState(false);
 
   // Region endpoints are already access-scoped on the backend.
   // Keep the UI as a simple projection of the user's regionAccess.
@@ -87,6 +89,11 @@ export default function BulkStudentUpload() {
   const download = async () => {
     setErr("");
     setMsg("");
+    setCountTouched(true);
+    if (!form.count || !Number.isInteger(Number(form.count)) || Number(form.count) < 1 || Number(form.count) > 500) {
+      setErr("No. of students is mandatory. Enter a number from 1 to 500.");
+      return;
+    }
     try {
       const payload = {
         districtId: form.districtId,
@@ -111,16 +118,32 @@ export default function BulkStudentUpload() {
 
   const downloadFailureLog = () => {
     if (!result?.errors?.length) return;
-    const headers = ["Excel Row", "Reason"];
-    const lines = [headers, ...result.errors.map((item) => [item.row, item.message])];
-    const csv = lines.map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${examType}-bulk-failed-rows.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    // Keep the same columns and order as the uploaded template, with
+    // "Failed Reason" added as the first column.
+    const templateHeaders = Object.keys(result.errors.find((item) => item.data)?.data || {})
+      // A previous failed-log file may itself contain this helper column.
+      // Never duplicate it or let its placeholder overwrite the real error.
+      .filter((header) => String(header).trim().toLowerCase() !== "failed reason");
+
+    const headers = ["Failed Reason", ...templateHeaders];
+    const rows = result.errors.map((item) => {
+      const sourceRow = item.data || {};
+      const row = { "Failed Reason": item.message || "Validation failed" };
+      templateHeaders.forEach((header) => {
+        row[header] = sourceRow[header] ?? "";
+      });
+      return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+    worksheet["!cols"] = [
+      { wch: 42 },
+      ...templateHeaders.map((header) => ({ wch: Math.max(14, Math.min(30, String(header).length + 3)) })),
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Student Registrations");
+    XLSX.writeFile(workbook, `${examType}-bulk-failed-rows.xlsx`);
   };
 
   const upload = async () => {
@@ -143,11 +166,11 @@ export default function BulkStudentUpload() {
     }
   };
 
-  const readyForTemplate = Boolean(form.districtId && form.blockId && form.schoolId);
+  const readyForTemplate = Boolean(form.districtId && form.blockId && form.schoolId && form.count && Number(form.count) >= 1 && Number(form.count) <= 500);
 
   return (
     <OfficialShell>
-      <section className="bulk-page">
+      <section className="bulk-page">\n        <style>{`.input-invalid { border: 1px solid #dc2626 !important; box-shadow: 0 0 0 1px #dc2626; } .field-error { color: #dc2626; display: block; margin-top: 4px; font-size: 12px; }`}</style>
         <div className="workspace-title">
           <div>
             <div className="eyebrow">BULK REGISTRATION</div>
@@ -167,7 +190,7 @@ export default function BulkStudentUpload() {
             </label>
             <label className="field">
               <span>No. of students *</span>
-              <input type="number" min="1" max="500" value={form.count} onChange={(e) => setForm({ ...form, count: e.target.value })} />
+              <input type="number" min="1" max="500" value={form.count} placeholder="Enter number of students" className={countTouched && (!form.count || Number(form.count) < 1 || Number(form.count) > 500 || !Number.isInteger(Number(form.count))) ? "input-invalid" : ""} aria-invalid={countTouched && !form.count} onChange={(e) => setForm({ ...form, count: e.target.value })} />{countTouched && !form.count && <small className="field-error">Mandatory field</small>}
             </label>
             <label className="field">
               <span>Select District *</span>
@@ -195,7 +218,7 @@ export default function BulkStudentUpload() {
           <p className="bulk-note">If school is not in dropdown then contact on helpline number.</p>
 
           <div className="bulk-actions">
-            <button className="secondary" onClick={download} disabled={!readyForTemplate}>Download Template</button>
+            <button className="secondary" onClick={download} disabled={!(form.districtId && form.blockId && form.schoolId)}>Download Template</button>
             <label className="file-picker">{file ? file.name : "Upload Template"}<input type="file" accept=".xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
             <button className="primary" onClick={upload} disabled={loading}>{loading ? "Submitting…" : "Submit"}</button>
           </div>
@@ -209,7 +232,7 @@ export default function BulkStudentUpload() {
 
           {result?.errors?.length > 0 && (
             <div className="bulk-result-panel">
-              <strong>Failed rows: {result.errors.length}</strong>
+              <strong>Failed rows: {result.errors.length} — download the report to see each Failed reason.</strong>
               <button className="secondary" type="button" onClick={downloadFailureLog}>Download Failed Log</button>
             </div>
           )}

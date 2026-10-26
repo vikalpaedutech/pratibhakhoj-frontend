@@ -550,8 +550,9 @@ export default function StudentRegister({ editMode = false, officialMode = false
                   <option value="">Select category</option>
                   <option>General</option>
                   <option>SC</option>
-                  <option>BC-A</option>
-                  <option>BC-B</option>
+                  <option>ST</option>
+                  <option>BCA</option>
+                  <option>BCB</option>
                   <option>Other</option>
                 </SearchableSelect>
               </label>

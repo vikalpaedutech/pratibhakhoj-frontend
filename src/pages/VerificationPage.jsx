@@ -141,13 +141,11 @@ export default function VerificationPage() {
   };
 
   const submitReject = () => {
-    if (!rejectStudent || !rejectReason) return;
-    if (rejectReason === "Other" && !otherRemark.trim()) return;
-    updateVerification(
-      rejectStudent,
-      "rejected",
-      rejectReason === "Other" ? otherRemark.trim() : rejectReason
-    );
+    if (!rejectStudent || !rejectReason.length) return;
+    if (rejectReason.includes("Other") && !otherRemark.trim()) return;
+    const reasons = rejectReason.filter((reason) => reason !== "Other");
+    if (rejectReason.includes("Other")) reasons.push(otherRemark.trim());
+    updateVerification(rejectStudent, "rejected", reasons.join(", "));
   };
 
   const submitVerify = () => {
@@ -244,7 +242,7 @@ export default function VerificationPage() {
                   <td>
                     {student.verificationStatus === "Pending" ? (
                       <div className="verification-actions">
-                        <button className="secondary" disabled={busy} onClick={() => { setRejectStudent(student); setRejectReason(""); setOtherRemark(""); }}>Reject</button>
+                        <button className="secondary" disabled={busy} onClick={() => { setRejectStudent(student); setRejectReason([]); setOtherRemark(""); }}>Reject</button>
                         <button className="primary" disabled={busy} onClick={() => { setVerifyStudent(student); setVerifyRemark(""); }}>Verify</button>
                       </div>
                     ) : (
@@ -268,9 +266,10 @@ export default function VerificationPage() {
                 value={rejectReason}
                 onChange={setRejectReason}
                 options={REJECTION_REASONS}
-                placeholder="Select reason"
+                isMulti
+                placeholder="Select one or more reasons"
               />
-              {rejectReason === "Other" && (
+              {rejectReason.includes("Other") && (
                 <textarea
                   value={otherRemark}
                   onChange={(e) => setOtherRemark(e.target.value)}
@@ -281,7 +280,7 @@ export default function VerificationPage() {
               )}
               <div className="modal-actions">
                 <button className="secondary" disabled={busy} onClick={() => setRejectStudent(null)}>Cancel</button>
-                <button className="primary" disabled={busy || !rejectReason || (rejectReason === "Other" && !otherRemark.trim())} onClick={submitReject}>{busy ? "Rejecting…" : "Reject"}</button>
+                <button className="primary" disabled={busy || !rejectReason.length || (rejectReason.includes("Other") && !otherRemark.trim())} onClick={submitReject}>{busy ? "Rejecting…" : "Reject"}</button>
               </div>
             </div>
           </div>
