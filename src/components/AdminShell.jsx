@@ -47,6 +47,8 @@ export default function AdminShell({ children }) {
         ["Dashboard Access", "/admin/dashboard-access"],
         ["Verification Users", "/admin/verification-users"],
         ["Permissions", "/admin/permissions"],
+        ["Examination Centers", "/admin/examination-centers"],
+        ["School Center Preference", "/school-center-preference"],
         ["Exam Controller", "/admin/exam-controller"],
       ],
     },

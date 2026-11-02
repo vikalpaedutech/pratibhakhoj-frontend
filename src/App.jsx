@@ -28,6 +28,8 @@ import SchoolVisitDashboard from "./pages/SchoolVisitDashboard";
 import { useAuth } from "./context/AuthContext";
 import ForgotPassword from "./pages/ForgotPassword";
 import ExamController from "./pages/admin/ExamController";
+import ExaminationCenters from "./pages/admin/ExaminationCenters";
+import SchoolCenterPreference from "./pages/SchoolCenterPreference";
 
 function Protected({ children, admin = false, schoolVisit = false, dashboardCode = "" }) {
   const { user, role, loading, schoolVisitAccess, dashboardAccess = [] } = useAuth();
@@ -77,6 +79,8 @@ export default function App() {
         <Route path="/admin/verification-users" element={<Protected admin={true}><AdminVerificationUsers /></Protected>} />
         <Route path="/admin/permissions" element={<Protected admin={true}><AdminPermissions /></Protected>} />
         <Route path="/admin/exam-controller" element={<Protected admin={true}><ExamController /></Protected>} />
+        <Route path="/admin/examination-centers" element={<Protected admin={true}><ExaminationCenters /></Protected>} />
+        <Route path="/school-center-preference" element={<Protected><SchoolCenterPreference /></Protected>} />
         <Route path="/official/verification" element={<Protected><VerificationPage /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

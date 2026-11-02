@@ -1,0 +1,25 @@
+import { useEffect, useState } from "react";
+import AdminShell from "../../components/AdminShell";
+import { api, unwrap } from "../../api/client";
+
+const empty = { examinationCenter:"", examinationCenterCode:"", districtId:"", blockId:"", examinationCenterCapacity:"", adjustments:"", examType:"", examLevel:"", paperCount:0 };
+export default function ExaminationCenters() {
+  const [form,setForm]=useState(empty), [districts,setDistricts]=useState([]), [blocks,setBlocks]=useState([]), [rows,setRows]=useState([]), [csv,setCsv]=useState(null), [busy,setBusy]=useState(false), [error,setError]=useState(""), [message,setMessage]=useState("");
+  const load=async()=>{try{setRows(unwrap(await api.get("/examination-centers"))||[])}catch(e){setError(e.response?.data?.message||"Unable to load centers")}};
+  useEffect(()=>{api.get("/regions/districts").then(r=>setDistricts(unwrap(r)||[]));load()},[]);
+  useEffect(()=>{setForm(f=>({...f,blockId:""}));setBlocks([]);if(form.districtId)api.get("/regions/blocks",{params:{districtId:form.districtId}}).then(r=>setBlocks(unwrap(r)||[]))},[form.districtId]);
+  const change=e=>setForm(f=>({...f,[e.target.name]:e.target.value}));
+  const save=async e=>{e.preventDefault();setBusy(true);setError("");setMessage("");try{await api.post("/examination-centers",{...form,examinationCenterCapacity:Number(form.examinationCenterCapacity),paperCount:Number(form.paperCount),adjustments:form.adjustments||null});setForm(empty);setMessage("Examination center added.");await load()}catch(e){setError(e.response?.data?.message||"Unable to add center")}finally{setBusy(false)}};
+  const importCsv=async()=>{if(!csv)return;setBusy(true);setError("");setMessage("");try{const text=await csv.text();const lines=text.trim().split(/\r?\n/);const headers=lines.shift().split(",").map(x=>x.trim());const data=lines.filter(Boolean).map(line=>{const vals=line.split(",");return Object.fromEntries(headers.map((h,i)=>[h,vals[i]?.trim()||""]))});await api.post("/examination-centers/bulk",{centers:data});setMessage(`${data.length} center(s) imported.`);setCsv(null);await load()}catch(e){setError(e.response?.data?.message||"Bulk import failed. Check CSV headers and values.")}finally{setBusy(false)}};
+  const disable=async id=>{if(!window.confirm("Disable this examination center?"))return;try{await api.delete(`/examination-centers/${id}`);await load()}catch(e){setError(e.response?.data?.message||"Unable to disable center")}};
+  return <AdminShell><section className="admin-page"><div className="admin-page-head"><div><div className="eyebrow">EXAMINATION MANAGEMENT</div><h1>Examination Centers</h1><p>Add centers manually or import multiple centers using CSV.</p></div></div>
+    <div className="panel"><h3>Add Examination Center</h3><form onSubmit={save}><div className="form-grid">
+      {[["examinationCenter","Center Name"],["examinationCenterCode","Center Code"],["examinationCenterCapacity","Capacity"],["examType","Exam Type"],["examLevel","Exam Level"],["paperCount","Paper Count"],["adjustments","Adjustments"]].map(([name,label])=><label className="field" key={name}><span>{label}</span><input name={name} value={form[name]} onChange={change} type={["examinationCenterCapacity","paperCount"].includes(name)?"number":"text"} required={["examinationCenter","examinationCenterCode","examinationCenterCapacity"].includes(name)} /></label>)}
+      <label className="field"><span>District *</span><select name="districtId" value={form.districtId} onChange={change} required><option value="">Select district</option>{districts.map(d=><option key={d._id} value={d._id}>{d.districtName}</option>)}</select></label>
+      <label className="field"><span>Block *</span><select name="blockId" value={form.blockId} onChange={change} required><option value="">Select block</option>{blocks.map(x=><option key={x._id} value={x._id}>{x.blockName}</option>)}</select></label>
+    </div><button className="primary" disabled={busy}>Add Center</button></form></div>
+    <div className="panel"><h3>Bulk Import Centers (CSV)</h3><p>CSV headers: examinationCenter, examinationCenterCode, districtId, blockId, examinationCenterCapacity, adjustments, examType, examLevel, paperCount. District and block IDs must match existing records.</p><input type="file" accept=".csv,text/csv" onChange={e=>setCsv(e.target.files?.[0]||null)} /><button className="primary" onClick={importCsv} disabled={!csv||busy}>Import CSV</button></div>
+    <div className="panel"><h3>Existing Centers ({rows.length})</h3><div className="table-wrap"><table><thead><tr><th>Center</th><th>Code</th><th>District</th><th>Block</th><th>Capacity</th><th>Action</th></tr></thead><tbody>{rows.map(r=><tr key={r._id}><td>{r.examinationCenter}</td><td>{r.examinationCenterCode}</td><td>{r.districtName}</td><td>{r.blockName}</td><td>{r.examinationCenterCapacity}</td><td><button type="button" onClick={()=>disable(r._id)}>Disable</button></td></tr>)}</tbody></table></div></div>
+    {error&&<div className="error">{error}</div>}{message&&<div className="success-message">{message}</div>}
+  </section></AdminShell>;
+}
