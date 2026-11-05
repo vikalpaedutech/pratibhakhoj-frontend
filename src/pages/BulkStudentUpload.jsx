@@ -30,7 +30,7 @@ function filterRegionItems(items, access, level, parentId = "") {
 }
 
 export default function BulkStudentUpload() {
-  const [examType, setExamType] = useState("MB");
+  const [examType, setExamType] = useState("");
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [schools, setSchools] = useState([]);
@@ -42,6 +42,7 @@ export default function BulkStudentUpload() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [countTouched, setCountTouched] = useState(false);
+  const [examWarningOpen, setExamWarningOpen] = useState(false);
 
   // Region endpoints are already access-scoped on the backend.
   // Keep the UI as a simple projection of the user's regionAccess.
@@ -148,6 +149,10 @@ export default function BulkStudentUpload() {
 
   const upload = async () => {
     setErr("");
+    if (!examType) {
+      setExamWarningOpen(true);
+      return;
+    }
     setMsg("");
     setResult(null);
     if (!file) return setErr("Select an Excel file.");
@@ -184,6 +189,7 @@ export default function BulkStudentUpload() {
             <label className="field">
               <span>Examination *</span>
               <SearchableSelect value={examType} onChange={(e) => setExamType(e.target.value)}>
+                <option value="">Please select examination</option>
                 <option value="MB">Mission Buniyaad · Class 8</option>
                 <option value="HS100">Haryana Super 100 · Class 10</option>
               </SearchableSelect>
@@ -215,17 +221,29 @@ export default function BulkStudentUpload() {
             </label>
           </div>
 
-          <p className="bulk-note">If school is not in dropdown then contact on helpline number.</p>
+          <p className="bulk-note">If school is not in dropdown then contact on helpline number (8595287276, 7428191687, 9310896010).</p>
 
           <div className="bulk-actions">
-            <button className="secondary" onClick={download} disabled={!(form.districtId && form.blockId && form.schoolId)}>Download Template</button>
+            <button className="secondary" onClick={download} disabled={!examType || !(form.districtId && form.blockId && form.schoolId)}>Download Template</button>
             <label className="file-picker">{file ? file.name : "Upload Template"}<input type="file" accept=".xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label>
-            <button className="primary" onClick={upload} disabled={loading}>{loading ? "Submitting…" : "Submit"}</button>
+            <button className={`primary${!examType ? " is-disabled" : ""}`} onClick={upload} disabled={loading} aria-disabled={!examType || loading}>{loading ? "Submitting…" : "Submit"}</button>
           </div>
 
           <div className="bulk-note">
             The downloaded template contains district, block and school values prefilled. Enter student details in the rows and upload the same template. Existing registrations created by your account can be updated through bulk upload; verified registrations and registrations created by another user are not overwritten.
           </div>
+
+          {examWarningOpen && (
+            <div className="modal-backdrop" role="presentation" onClick={() => setExamWarningOpen(false)}>
+              <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="bulk-exam-warning-title" onClick={(e) => e.stopPropagation()}>
+                <h3 id="bulk-exam-warning-title">Examination Required</h3>
+                <p>Please select examination before submitting the bulk upload.</p>
+                <div className="modal-actions">
+                  <button type="button" className="primary" onClick={() => setExamWarningOpen(false)}>OK</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {msg && <div className="success-message">{msg}</div>}
           {err && <div className="error">{err}</div>}

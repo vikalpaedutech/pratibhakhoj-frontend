@@ -83,7 +83,7 @@ export default function StudentList() {
                 <td>{student.classOfStudent}</td>
                 <td>
                   <span className={`status ${student.isVerified ? "ok" : "pending"}`}>
-                    {student.isVerified ? "Verified" : "Pending"}
+                    {student.isVerified ? "Registration Successful" : "Pending"}
                   </span>
                 </td>
                 <td>

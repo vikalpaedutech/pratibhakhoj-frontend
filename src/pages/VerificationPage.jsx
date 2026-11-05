@@ -208,7 +208,7 @@ export default function VerificationPage() {
             options={[
               { value: "Pending", label: "Pending" },
               { value: "Rejected", label: "Rejected" },
-              { value: "Verified", label: "Verified" },
+              { value: "Verified", label: "Registration Successful" },
               { value: "All", label: "All statuses" },
             ]}
             placeholder="Status"
@@ -238,7 +238,7 @@ export default function VerificationPage() {
                       />
                     ) : "-"}
                   </td>
-                  <td><span className={`status ${student.verificationStatus === "Verified" ? "ok" : student.verificationStatus === "Rejected" ? "rejected" : "pending"}`}>{student.verificationStatus}</span></td>
+                  <td><span className={`status ${student.verificationStatus === "Verified" ? "ok" : student.verificationStatus === "Rejected" ? "rejected" : "pending"}`}>{student.verificationStatus === "Verified" ? "Registration Successful" : student.verificationStatus}</span></td>
                   <td>
                     {student.verificationStatus === "Pending" ? (
                       <div className="verification-actions">

@@ -106,7 +106,7 @@ export default function Success() {
         <div className="acknowledgement-heading acknowledgement-heading-centered">
           <div>
             <div className="eyebrow">REGISTRATION STATUS</div>
-            <h1>{registrationStatus}</h1>
+            <h1>{registrationStatus === "Verified" ? "Registration Successful" : registrationStatus}</h1>
             {registrationStatus === "Rejected" && rejectionRemark && (
               <div className="rejection-reason">
                 <strong>Rejection Reason:</strong> {rejectionRemark}

@@ -715,3 +715,7 @@
 .exam-toggle-field input:focus-visible + .exam-toggle-track { outline: 2px solid #2563eb; outline-offset: 3px; }
 .exam-toggle-field strong, .exam-toggle-field small { display: block; }
 .exam-toggle-field small { margin-top: 3px; opacity: .75; }
+
+/* Bulk registration: keep the no-examination submit visibly disabled while
+   allowing a click to explain why submission is blocked. */
+.bulk-page .bulk-actions .primary.is-disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.15)}
