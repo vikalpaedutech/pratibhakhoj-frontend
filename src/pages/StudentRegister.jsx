@@ -561,7 +561,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
               <Field label="Mobile *" value={form.mobile || ""} inputMode="numeric" maxLength={10} onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) })} required />
               <Field label="WhatsApp" value={form.whatsapp || ""} inputMode="numeric" maxLength={10} onChange={(e) => setForm({ ...form, whatsapp: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
               <Field
-                label={`${classOfStudent === 8 ? "7th" : "10th"} Class Annual Exam %`}
+                label={`${classOfStudent === 8 ? "7th" : "09th"} Class Annual Exam %`}
                 type="number"
                 min={0}
                 max={100}

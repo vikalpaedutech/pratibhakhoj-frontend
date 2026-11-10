@@ -102,6 +102,7 @@ export default function BulkStudentUpload() {
         schoolDistrictId: form.schoolId,
         schoolEntry: "db",
         classOfStudent: EXAMS[examType].classOfStudent,
+        examType,
         count: Number(form.count),
       };
       const response = await api.post("/students/bulk/template", payload, { responseType: "blob" });
