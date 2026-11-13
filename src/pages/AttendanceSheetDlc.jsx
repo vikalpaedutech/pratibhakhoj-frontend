@@ -46,10 +46,10 @@ export default function AttendanceSheetDlc() {
         params: { districtId, schoolType },
         responseType: "blob",
       });
-      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const blobUrl = URL.createObjectURL(new Blob([response.data], { type: "application/zip" }));
       const anchor = document.createElement("a");
       anchor.href = blobUrl;
-      anchor.download = `attendance-sheet-${districts.find((d) => d._id === districtId)?.districtName || "district"}.pdf`;
+      anchor.download = `attendance-sheets-${districts.find((d) => d._id === districtId)?.districtName || "district"}.zip`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -85,7 +85,7 @@ export default function AttendanceSheetDlc() {
 
         <div className="attendance-sheet-intro">
           <h2>Download Attendance Sheet</h2>
-          <p>Select the district and school category to generate the printable PDF.</p>
+          <p>Select the district and school category to download a ZIP containing a separate printable PDF for each block.</p>
         </div>
 
         <form onSubmit={submit} className="attendance-sheet-form">
@@ -111,7 +111,7 @@ export default function AttendanceSheetDlc() {
 
           {error && <div className="error attendance-sheet-error">{error}</div>}
           <button type="submit" className="primary attendance-sheet-submit" disabled={loading || downloading || !districtId || !schoolType}>
-            {loading ? "Loading districts…" : downloading ? "Generating PDF…" : "Submit & Download PDF"}
+            {loading ? "Loading districts…" : downloading ? "Generating block-wise PDFs…" : "Submit & Download ZIP"}
           </button>
         </form>
         <p className="attendance-sheet-note">Student names and signatures are to be filled in manually on the printed sheet.</p>
