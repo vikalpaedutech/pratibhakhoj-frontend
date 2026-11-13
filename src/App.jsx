@@ -30,6 +30,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ExamController from "./pages/admin/ExamController";
 import ExaminationCenters from "./pages/admin/ExaminationCenters";
 import SchoolCenterPreference from "./pages/SchoolCenterPreference";
+import SchoolCenterPreferenceForm from "./pages/SchoolCenterPreferenceForm";
+import AttendanceSheetDlc from "./pages/AttendanceSheetDlc";
 
 function Protected({ children, admin = false, schoolVisit = false, dashboardCode = "" }) {
   const { user, role, loading, schoolVisitAccess, dashboardAccess = [] } = useAuth();
@@ -46,6 +48,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Landing />} />
+        <Route path="/attendance-sheet-dlc" element={<AttendanceSheetDlc />} />
         <Route path="/register/:type" element={<StudentRegister />} />
         <Route path="/register/:type/edit/:srn" element={<StudentRegister editMode />} />
         <Route path="/registration-success/:slipId" element={<Success />} />
@@ -81,6 +84,7 @@ export default function App() {
         <Route path="/admin/exam-controller" element={<Protected admin={true}><ExamController /></Protected>} />
         <Route path="/admin/examination-centers" element={<Protected admin={true}><ExaminationCenters /></Protected>} />
         <Route path="/school-center-preference" element={<Protected><SchoolCenterPreference /></Protected>} />
+        <Route path="/school-center-preference/form" element={<Protected><SchoolCenterPreferenceForm /></Protected>} />
         <Route path="/official/verification" element={<Protected><VerificationPage /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

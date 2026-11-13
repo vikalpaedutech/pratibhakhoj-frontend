@@ -719,3 +719,23 @@
 /* Bulk registration: keep the no-examination submit visibly disabled while
    allowing a click to explain why submission is blocked. */
 .bulk-page .bulk-actions .primary.is-disabled{opacity:.55;cursor:not-allowed;filter:grayscale(.15)}
+
+
+/* Public DLC attendance-sheet generator */
+.attendance-sheet-public{min-height:calc(100vh - 30px);display:flex;align-items:flex-start;justify-content:center;padding:54px 20px;background:#f3f6fb}
+.attendance-sheet-card{width:min(100%,820px);background:#fff;border:1px solid #e0e6ef;border-radius:16px;padding:30px;box-shadow:0 16px 44px rgba(26,43,77,.08)}
+.attendance-sheet-brand{display:grid;grid-template-columns:64px 1fr 72px;gap:18px;align-items:center;padding-bottom:22px;border-bottom:1px solid #e7ebf2}
+.attendance-sheet-brand img{width:100%;max-height:72px;object-fit:contain}
+.attendance-sheet-brand>div{text-align:center}
+.attendance-sheet-brand span{font-size:13px;letter-spacing:2px;font-weight:900;color:#74583d}
+.attendance-sheet-brand h1{font-size:24px;margin:5px 0;color:#1e2f59}
+.attendance-sheet-brand p{font-size:12px;color:#68758a;margin:0}
+.attendance-sheet-intro{margin:28px 0 20px}
+.attendance-sheet-intro h2{font-size:21px;margin:0 0 6px;color:#1d2e55}
+.attendance-sheet-intro p,.attendance-sheet-note{font-size:13px;color:#68758a}
+.attendance-sheet-form{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:end}
+.attendance-sheet-form .field{margin:0}
+.attendance-sheet-submit{grid-column:1/-1;min-height:46px}
+.attendance-sheet-error{grid-column:1/-1;margin:0}
+.attendance-sheet-note{margin:20px 0 0;padding-top:16px;border-top:1px solid #edf0f5}
+@media(max-width:650px){.attendance-sheet-public{padding:24px 12px}.attendance-sheet-card{padding:20px 16px}.attendance-sheet-brand{grid-template-columns:42px 1fr 48px;gap:8px}.attendance-sheet-brand h1{font-size:18px}.attendance-sheet-brand p{font-size:10px}.attendance-sheet-form{grid-template-columns:1fr}.attendance-sheet-submit,.attendance-sheet-error{grid-column:auto}}
