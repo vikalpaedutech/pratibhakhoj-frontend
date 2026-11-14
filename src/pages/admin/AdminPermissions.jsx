@@ -78,9 +78,8 @@ export default function AdminPermissions() {
         );
       } else {
         const next = {};
-        rows.forEach((row) => {
-          next[row.code] = row.isAllowed === false ? "deny" : "allow";
-        });
+        (data?.effectivePermissions || rows.filter((row) => row.isAllowed !== false).map((row) => row.code))
+          .forEach((code) => { next[code] = true; });
         setUserStates(next);
       }
     } catch (err) {
@@ -95,21 +94,6 @@ export default function AdminPermissions() {
       const next = new Set(current);
       if (next.has(code)) next.delete(code);
       else next.add(code);
-      return next;
-    });
-  };
-
-  const cycleUserPermission = (code) => {
-    setUserStates((current) => {
-      const currentState = current[code] || "inherit";
-      const nextState = currentState === "inherit"
-        ? "allow"
-        : currentState === "allow"
-          ? "deny"
-          : "inherit";
-      const next = { ...current };
-      if (nextState === "inherit") delete next[code];
-      else next[code] = nextState;
       return next;
     });
   };
@@ -131,9 +115,9 @@ export default function AdminPermissions() {
         });
       } else {
         await api.put(`/admin/permissions/users/${targetId}`, {
-          permissions: Object.entries(userStates).map(([code, state]) => ({
-            code,
-            isAllowed: state === "allow",
+          permissions: permissions.map((permission) => ({
+            code: permission.code,
+            isAllowed: Boolean(userStates[permission.code]),
           })),
         });
       }
@@ -225,7 +209,7 @@ export default function AdminPermissions() {
           <div className="panel-head">
             <h3>Available Permissions</h3>
             {targetType === "user" && (
-              <span>Click: Inherit → Allow → Deny</span>
+              <span>Tick permissions to allow access. Unticked permissions inherit role access.</span>
             )}
           </div>
 
@@ -236,8 +220,8 @@ export default function AdminPermissions() {
           ) : (
             <div className="permission-list">
               {permissions.map((permission) => {
-                const state = userStates[permission.code] || "inherit";
                 const roleChecked = selected.has(permission.code);
+                const userChecked = Boolean(userStates[permission.code]);
 
                 return (
                   <div className="permission-row" key={permission._id}>
@@ -258,14 +242,20 @@ export default function AdminPermissions() {
                         <span>Allow</span>
                       </label>
                     ) : (
-                      <button
-                        type="button"
-                        className={`permission-state permission-state-${state}`}
-                        onClick={() => cycleUserPermission(permission.code)}
-                        disabled={!targetId}
-                      >
-                        {state === "inherit" ? "Inherit" : state === "allow" ? "Allow" : "Deny"}
-                      </button>
+                      <label className="permission-check">
+                        <input
+                          type="checkbox"
+                          checked={userChecked}
+                          onChange={(event) => setUserStates((current) => {
+                            const next = { ...current };
+                            if (event.target.checked) next[permission.code] = true;
+                            else delete next[permission.code];
+                            return next;
+                          })}
+                          disabled={!targetId}
+                        />
+                        <span>Allow</span>
+                      </label>
                     )}
                   </div>
                 );

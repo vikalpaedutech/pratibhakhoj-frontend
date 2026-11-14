@@ -27,6 +27,9 @@ export default function VerificationPage() {
 
   const [examType, setExamType] = useState(allowedExams[0] || "");
   const [status, setStatus] = useState("Pending");
+  const [photoStatus, setPhotoStatus] = useState("All");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkModal, setBulkModal] = useState(null);
   const [districtId, setDistrictId] = useState("");
   const [blockId, setBlockId] = useState("");
   const [schoolId, setSchoolId] = useState("");
@@ -36,11 +39,12 @@ export default function VerificationPage() {
   const [summary, setSummary] = useState({ pending: 0, verified: 0, rejected: 0 });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [verifyingStudentId, setVerifyingStudentId] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [rejectStudent, setRejectStudent] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
   const [otherRemark, setOtherRemark] = useState("");
-  const [verifyStudent, setVerifyStudent] = useState(null);
-  const [verifyRemark, setVerifyRemark] = useState("");
   const [previewImage, setPreviewImage] = useState("");
 
   useEffect(() => {
@@ -69,20 +73,28 @@ export default function VerificationPage() {
     }
   };
 
-  const loadStudents = async () => {
+  const loadStudents = async ({ append = false } = {}) => {
     if (!examType) return;
+    if (append) setLoadingMore(true);
     setError("");
     try {
-      const params = new URLSearchParams({ examType, status, limit: "500" });
+      const offset = append ? students.length : 0;
+      const params = new URLSearchParams({ examType, status, limit: "100", skip: String(offset) });
       if (districtId) params.set("districtId", districtId);
       if (blockId) params.set("blockDistrictId", blockId);
       if (schoolId) params.set("schoolDistrictId", schoolId);
       if (search.trim()) params.set("search", search.trim());
+      if (photoStatus !== "All") params.set("photoStatus", photoStatus);
       const data = unwrap(await api.get(`/students/verification?${params.toString()}`));
-      setStudents(data?.students || []);
+      const batch = data?.students || [];
+      setStudents((current) => append ? [...current, ...batch] : batch);
+      setHasMore(batch.length === 100);
     } catch (e) {
       setError(e.response?.data?.message || "Unable to load verification registrations.");
-      setStudents([]);
+      if (!append) setStudents([]);
+      setHasMore(false);
+    } finally {
+      if (append) setLoadingMore(false);
     }
   };
 
@@ -98,9 +110,11 @@ export default function VerificationPage() {
   useEffect(() => {
     if (!examType) return;
     loadStudents();
-  }, [examType, status, districtId, blockId, schoolId]);
+    setSelectedIds([]);
+  }, [examType, status, photoStatus, districtId, blockId, schoolId]);
 
   useEffect(() => {
+    setSelectedIds([]);
     const timer = setTimeout(() => {
       if (examType) loadStudents();
     }, 300);
@@ -122,6 +136,7 @@ export default function VerificationPage() {
 
   const updateVerification = async (student, nextStatus, remark = "") => {
     setBusy(true);
+    if (nextStatus === "verified") setVerifyingStudentId(student._id);
     try {
       await api.patch(`/students/${student._id}/verification`, {
         status: nextStatus,
@@ -130,13 +145,13 @@ export default function VerificationPage() {
       setRejectStudent(null);
       setRejectReason("");
       setOtherRemark("");
-      setVerifyStudent(null);
-      setVerifyRemark("");
+      setSelectedIds((current) => current.filter((id) => id !== student._id));
       await Promise.all([loadStudents(), loadSummary()]);
     } catch (e) {
       setError(e.response?.data?.message || "Unable to update verification status.");
     } finally {
       setBusy(false);
+      if (nextStatus === "verified") setVerifyingStudentId("");
     }
   };
 
@@ -148,10 +163,27 @@ export default function VerificationPage() {
     updateVerification(rejectStudent, "rejected", reasons.join(", "));
   };
 
-  const submitVerify = () => {
-    if (!verifyStudent) return;
-    updateVerification(verifyStudent, "verified", verifyRemark.trim());
+
+  const submitBulkVerify = async () => {
+    const ids = selectedIds.filter((id) => students.some((student) => student._id === id && student.verificationStatus === "Pending"));
+    if (!ids.length) return;
+    setBulkModal({ status: "processing", total: ids.length, verified: 0, failed: 0 });
+    setBusy(true);
+    setError("");
+    try {
+      const response = unwrap(await api.post("/students/verification/bulk-verify", { studentIds: ids }));
+      const result = response || {};
+      setBulkModal({ status: "done", total: ids.length, verified: Number(result.verifiedCount || 0), failed: Number(result.failedCount || 0) });
+      setSelectedIds([]);
+      await Promise.all([loadStudents(), loadSummary()]);
+    } catch (e) {
+      setBulkModal({ status: "error", total: ids.length, verified: 0, failed: ids.length, message: e.response?.data?.message || "Bulk verification failed." });
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const toggleStudent = (id) => setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
 
   return (
     <OfficialShell>
@@ -203,6 +235,16 @@ export default function VerificationPage() {
             placeholder="All schools"
           />
           <ReactSelect
+            value={photoStatus}
+            onChange={setPhotoStatus}
+            options={[
+              { value: "All", label: "All photos" },
+              { value: "WithPhoto", label: "With Photos" },
+              { value: "NoPhoto", label: "No Photos" },
+            ]}
+            placeholder="Photo"
+          />
+          <ReactSelect
             value={status}
             onChange={setStatus}
             options={[
@@ -214,6 +256,15 @@ export default function VerificationPage() {
             placeholder="Status"
           />
         </div>
+
+        {status === "Pending" && (
+          <div className="verification-bulk-toolbar">
+            <span>{selectedIds.length} pending registration(s) selected</span>
+            <button type="button" className="primary" disabled={!selectedIds.length || busy} onClick={submitBulkVerify}>
+              Verify Selected ({selectedIds.length})
+            </button>
+          </div>
+        )}
 
         <div className="table-wrap verification-table-wrap">
           <table>
@@ -230,12 +281,18 @@ export default function VerificationPage() {
                   <td>{student.whatsapp || "-"}</td>
                   <td>
                     {student.studentImage?.previewUrl ? (
-                      <img
-                        className="verification-student-thumb"
-                        src={student.studentImage.previewUrl}
-                        alt={student.name}
+                      <button
+                        type="button"
+                        className="verification-thumb-button"
+                        title="Click to view full student photo"
                         onClick={() => setPreviewImage(student.studentImage.previewUrl)}
-                      />
+                      >
+                        <img
+                          className="verification-student-thumb"
+                          src={student.studentImage.previewUrl}
+                          alt={`${student.name} student photo`}
+                        />
+                      </button>
                     ) : "-"}
                   </td>
                   <td><span className={`status ${student.verificationStatus === "Verified" ? "ok" : student.verificationStatus === "Rejected" ? "rejected" : "pending"}`}>{student.verificationStatus === "Verified" ? "Registration Successful" : student.verificationStatus}</span></td>
@@ -243,7 +300,12 @@ export default function VerificationPage() {
                     {student.verificationStatus === "Pending" ? (
                       <div className="verification-actions">
                         <button className="secondary" disabled={busy} onClick={() => { setRejectStudent(student); setRejectReason([]); setOtherRemark(""); }}>Reject</button>
-                        <button className="primary" disabled={busy} onClick={() => { setVerifyStudent(student); setVerifyRemark(""); }}>Verify</button>
+                        <button className="primary verification-verify-btn" disabled={busy} onClick={() => updateVerification(student, "verified")}>
+                          {verifyingStudentId === student._id ? <><span className="verification-button-spinner" /> Verifying…</> : "Verify"}
+                        </button>
+                        <label className="verification-row-select" title="Select for bulk verification">
+                          <input type="checkbox" checked={selectedIds.includes(student._id)} disabled={busy} onChange={() => toggleStudent(student._id)} />
+                        </label>
                       </div>
                     ) : (
                       <span className="muted">No action</span>
@@ -255,6 +317,15 @@ export default function VerificationPage() {
             </tbody>
           </table>
         </div>
+
+        {hasMore && (
+          <div className="verification-load-more">
+            <button type="button" className="secondary" disabled={loadingMore || busy} onClick={() => loadStudents({ append: true })}>
+              {loadingMore ? "Loading…" : "Load More (100)"}
+            </button>
+            <span>Showing {students.length} registrations</span>
+          </div>
+        )}
 
         {rejectStudent && (
           <div className="modal-backdrop" onClick={() => !busy && setRejectStudent(null)}>
@@ -286,21 +357,16 @@ export default function VerificationPage() {
           </div>
         )}
 
-        {verifyStudent && (
-          <div className="modal-backdrop" onClick={() => !busy && setVerifyStudent(null)}>
-            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-              <h3>Verify Registration</h3>
-              <p>Verification remark is optional.</p>
-              <textarea
-                value={verifyRemark}
-                onChange={(e) => setVerifyRemark(e.target.value)}
-                placeholder="Optional verification remark"
-                rows={4}
-              />
-              <div className="modal-actions">
-                <button className="secondary" disabled={busy} onClick={() => setVerifyStudent(null)}>Cancel</button>
-                <button className="primary" disabled={busy} onClick={submitVerify}>{busy ? "Verifying…" : "Verify"}</button>
-              </div>
+        {bulkModal && (
+          <div className="modal-backdrop" onClick={() => bulkModal.status !== "processing" && setBulkModal(null)}>
+            <div className="modal-card verification-bulk-modal" onClick={(e) => e.stopPropagation()}>
+              <h3>{bulkModal.status === "processing" ? "Bulk Verification Processing" : bulkModal.status === "done" ? "Bulk Verification Completed" : "Bulk Verification Failed"}</h3>
+              {bulkModal.status === "processing" ? (
+                <><p>Verifying selected registrations. Please wait and do not close this window.</p><div className="verification-processing-indicator" /><strong>{bulkModal.total} registrations queued for verification</strong></>
+              ) : bulkModal.status === "done" ? (
+                <><p>Bulk verification has finished.</p><div className="verification-bulk-count"><strong>{bulkModal.verified}</strong><span>Successfully verified out of {bulkModal.total}</span></div>{bulkModal.failed > 0 && <p>{bulkModal.failed} registration(s) could not be verified.</p>}</>
+              ) : <p>{bulkModal.message}</p>}
+              {bulkModal.status !== "processing" && <div className="modal-actions"><button className="primary" onClick={() => setBulkModal(null)}>Close</button></div>}
             </div>
           </div>
         )}

@@ -31,6 +31,7 @@ import ExamController from "./pages/admin/ExamController";
 import ExaminationCenters from "./pages/admin/ExaminationCenters";
 import SchoolCenterPreference from "./pages/SchoolCenterPreference";
 import SchoolCenterPreferenceForm from "./pages/SchoolCenterPreferenceForm";
+import SchoolCenterPreferenceSchools from "./pages/SchoolCenterPreferenceSchools";
 import AttendanceSheetDlc from "./pages/AttendanceSheetDlc";
 
 function Protected({ children, admin = false, schoolVisit = false, dashboardCode = "" }) {
@@ -85,6 +86,7 @@ export default function App() {
         <Route path="/admin/examination-centers" element={<Protected admin={true}><ExaminationCenters /></Protected>} />
         <Route path="/school-center-preference" element={<Protected><SchoolCenterPreference /></Protected>} />
         <Route path="/school-center-preference/form" element={<Protected><SchoolCenterPreferenceForm /></Protected>} />
+        <Route path="/school-center-preference/blocks/:blockId/schools" element={<Protected><SchoolCenterPreferenceSchools /></Protected>} />
         <Route path="/official/verification" element={<Protected><VerificationPage /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { LEVEL1_DASHBOARDS, ALL_REGISTRATION_DASHBOARDS, REPORT_DASHBOARDS } from "../config/dashboardAccess";
 
 export default function OfficialShell({ children }) {
-  const { user, role, logout, verificationAccess = [], dashboardAccess = [], schoolVisitAccess = false } = useAuth();
+  const { user, role, logout, verificationAccess = [], dashboardAccess = [], permissions = [], schoolVisitAccess = false } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const accessibleDashboards = role?.code === "ADMIN"
@@ -37,6 +37,9 @@ export default function OfficialShell({ children }) {
       ? [["Dashboards", null], ...accessibleReportDashboards.map((item) => [item.label, item.path])]
       : []),
     ...(verificationAccess.length ? [["Verification", "/official/verification"]] : []),
+    ...(role?.code === "ADMIN" || permissions.includes("SCHOOL_CENTER_PREFERENCE")
+      ? [["School Center Preference", "/school-center-preference"]]
+      : []),
   ];
 
   const closeOnMobile = () => setSidebarOpen(false);
