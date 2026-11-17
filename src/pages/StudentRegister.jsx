@@ -26,6 +26,7 @@ const blank = {
   blockDistrictId: "",
   schoolDistrictId: "",
   previousClassAnnualExamPercentage: "",
+  classOfStudent: 8,
   schoolEntry: "db",
   studentImage: null,
   previousClassResult: null,
@@ -59,6 +60,8 @@ export default function StudentRegister({ editMode = false, officialMode = false
     previousClassResult: null,
   });
   const [manualSchoolName, setManualSchoolName] = useState("");
+  const [removeStudentImage, setRemoveStudentImage] = useState(false);
+  const [removePreviousClassResult, setRemovePreviousClassResult] = useState(false);
 
   const availableDistricts = useMemo(() => {
     if (!officialMode || allRegistrationsMode) return districts;
@@ -196,7 +199,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
           previousClassAnnualExamPercentage:
             student.previousClassAnnualExamPercentage ?? "",
           schoolEntry: student.schoolEntry === "manual" ? "manual" : "db",
-          classOfStudent,
+          classOfStudent: Number(student.classOfStudent || classOfStudent),
           registrationStatus: student.verificationStatus || "Pending",
           registrationRemark: student.registrationFormVerificationRemark || "",
           studentImage: null,
@@ -278,7 +281,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
           houseNumber: student.houseNumber || "", cityTownVillage: student.cityTownVillage || "", addressBlock: student.addressBlock || "",
           addressDistrict: student.addressDistrict || "", districtId: districtId || "",
           blockDistrictId: blockId || "", schoolDistrictId: schoolId || "", previousClassAnnualExamPercentage: student.previousClassAnnualExamPercentage ?? "",
-          schoolEntry: student.schoolEntry === "manual" ? "manual" : "db", classOfStudent, registrationStatus: student.verificationStatus || "Pending", registrationRemark: student.registrationFormVerificationRemark || "", studentImage: null, previousClassResult: null,
+          schoolEntry: student.schoolEntry === "manual" ? "manual" : "db", classOfStudent: Number(student.classOfStudent || classOfStudent), registrationStatus: student.verificationStatus || "Pending", registrationRemark: student.registrationFormVerificationRemark || "", studentImage: null, previousClassResult: null,
         });
         setManualSchoolName(student.schoolEntry === "manual" ? (student.schoolNameManual || "") : "");
         if (districtId) {
@@ -299,6 +302,8 @@ export default function StudentRegister({ editMode = false, officialMode = false
 
       setForm((current) => ({ ...current, studentSrn: srn, classOfStudent }));
       setExistingFiles({ studentImage: null, previousClassResult: null });
+      setRemoveStudentImage(false);
+      setRemovePreviousClassResult(false);
       setOfficialStudentId(null);
       setStage("form");
     } catch (err) {
@@ -407,10 +412,12 @@ export default function StudentRegister({ editMode = false, officialMode = false
 
   const selectStudentImage = (file) => {
     setForm((current) => ({ ...current, studentImage: file || null }));
+    if (file) setRemoveStudentImage(false);
   };
 
   const selectPreviousResult = (file) => {
     setForm((current) => ({ ...current, previousClassResult: file || null }));
+    if (file) setRemovePreviousClassResult(false);
   };
 
   const submit = async (event) => {
@@ -442,7 +449,11 @@ export default function StudentRegister({ editMode = false, officialMode = false
       payload.set("examType", examType);
       payload.set("schoolEntry", form.schoolEntry || "db");
       payload.set("schoolNameManual", form.schoolEntry === "manual" ? manualSchoolName.trim() : "");
-      payload.set("classOfStudent", String(classOfStudent));
+      payload.set("classOfStudent", String(allRegistrationsMode ? form.classOfStudent : classOfStudent));
+      if (allRegistrationsMode) {
+        payload.set("removeStudentImage", String(removeStudentImage));
+        payload.set("removePreviousClassResult", String(removePreviousClassResult));
+      }
 
       const response = allRegistrationsMode
         ? await api.patch(`/students/all-registrations/${officialStudentId}`, payload)
@@ -517,7 +528,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
         <div className="form-intro">
           <div className="form-intro-centered">
             <h2>{pageTitle} (2027-29)</h2>
-            <p className="form-srn-line">Class {classOfStudent} · SRN <strong>{srn || form.studentSrn}</strong></p>
+            <p className="form-srn-line">Class {allRegistrationsMode ? form.classOfStudent : classOfStudent} · SRN <strong>{srn || form.studentSrn}</strong></p>
           </div>
         </div>
 
@@ -531,7 +542,10 @@ export default function StudentRegister({ editMode = false, officialMode = false
             <div className="form-grid">
               <Field label="Student Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               <Field label="Father Name *" value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} required />
-              <Field label="Mother Name *" value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} required />
+              <Field label={allRegistrationsMode ? "Mother Name" : "Mother Name *"} value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} required={!allRegistrationsMode} />
+              {allRegistrationsMode && (
+                <label className="field"><span>Class *</span><SearchableSelect value={String(form.classOfStudent || classOfStudent)} onChange={(e) => setForm((current) => ({ ...current, classOfStudent: Number(e.target.value) }))} required><option value="8">Class 8</option><option value="10">Class 10</option></SearchableSelect></label>
+              )}
               <Field label="Date of Birth *" type="date" value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} required />
 
               <label className="field">
@@ -561,7 +575,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
               <Field label="Mobile *" value={form.mobile || ""} inputMode="numeric" maxLength={10} onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) })} required />
               <Field label="WhatsApp" value={form.whatsapp || ""} inputMode="numeric" maxLength={10} onChange={(e) => setForm({ ...form, whatsapp: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
               <Field
-                label={`${classOfStudent === 8 ? "7th" : "09th"} Class Annual Exam %`}
+                label={`${(allRegistrationsMode ? form.classOfStudent : classOfStudent) === 8 ? "7th" : "09th"} Class Annual Exam %`}
                 type="number"
                 min={0}
                 max={100}
@@ -677,7 +691,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
             <div className="form-grid">
               <div className="upload-field">
                 <div className="upload-heading">
-                  <span>{`Upload ${classOfStudent === 8 ? "7th" : "9th"} Class Annual Result`}</span>
+                  <span>{`Upload ${(allRegistrationsMode ? form.classOfStudent : classOfStudent) === 8 ? "7th" : "9th"} Class Annual Result`}</span>
                   <small>JPG, PNG, WEBP or PDF · max 5 MB</small>
                 </div>
 
@@ -724,6 +738,9 @@ export default function StudentRegister({ editMode = false, officialMode = false
                     onChange={(e) => selectPreviousResult(e.target.files?.[0] || null)}
                   />
                 </label>
+                {allRegistrationsMode && existingFiles.previousClassResult && !removePreviousClassResult && (
+                  <button type="button" className="secondary" onClick={() => { setRemovePreviousClassResult(true); setExistingFiles((current) => ({ ...current, previousClassResult: null })); setForm((current) => ({ ...current, previousClassResult: null })); }}>Remove Document</button>
+                )}
               </div>
 
               <div className="upload-field">
@@ -766,6 +783,9 @@ export default function StudentRegister({ editMode = false, officialMode = false
                     onChange={(e) => selectStudentImage(e.target.files?.[0] || null)}
                   />
                 </label>
+                {allRegistrationsMode && existingFiles.studentImage && !removeStudentImage && (
+                  <button type="button" className="secondary" onClick={() => { setRemoveStudentImage(true); setExistingFiles((current) => ({ ...current, studentImage: null })); setForm((current) => ({ ...current, studentImage: null })); }}>Remove Image</button>
+                )}
               </div>
             </div>
 

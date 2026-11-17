@@ -26,6 +26,9 @@ export default function AllRegistrationsDashboard() {
   const [filters, setFilters] = useState({ search: "", districtId: "", blockId: "", schoolId: "" });
   const [selected, setSelected] = useState(new Set());
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
+  const [deletingId, setDeletingId] = useState("");
   const [loading, setLoading] = useState(false);
   const [bulkAckLoading, setBulkAckLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,7 +42,7 @@ export default function AllRegistrationsDashboard() {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ examType: code, limit: "5000", page: "1" });
+      const params = new URLSearchParams({ examType: code, limit: String(pageSize), page: String(page) });
       if (filters.search.trim()) params.set("search", filters.search.trim());
       if (filters.districtId) params.set("districtId", filters.districtId);
       if (filters.blockId) params.set("blockDistrictId", filters.blockId);
@@ -67,7 +70,7 @@ export default function AllRegistrationsDashboard() {
 
   useEffect(() => {
     if (!authLoading && isAllowed) load();
-  }, [authLoading, isAllowed, code]);
+  }, [authLoading, isAllowed, code, page]);
 
   useEffect(() => {
     if (!filters.districtId) {
@@ -98,6 +101,19 @@ export default function AllRegistrationsDashboard() {
     if (next.has(key)) next.delete(key); else next.add(key);
     return next;
   });
+
+  const deleteRegistration = async (student) => {
+    const confirmed = window.confirm(`Delete registration for ${student.name} (SRN: ${student.studentSrn})?`);
+    if (!confirmed) return;
+    setDeletingId(String(student._id));
+    setError("");
+    try {
+      await api.delete(`/students/all-registrations/${student._id}?examType=${code}`);
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to delete registration.");
+    } finally { setDeletingId(""); }
+  };
 
   const bulkAck = async () => {
     if (!selected.size || bulkAckLoading) return;
@@ -164,7 +180,7 @@ export default function AllRegistrationsDashboard() {
                   <option value="">School</option>
                   {schools.map((school) => <option key={school._id} value={school._id}>{school.schoolName}</option>)}
                 </SearchableSelect>
-                <button className="secondary" onClick={load} disabled={loading}>{loading ? "Loading…" : "Search"}</button>
+                <button className="secondary" onClick={() => { if (page === 1) load(); else setPage(1); }} disabled={loading}>{loading ? "Loading…" : "Search"}</button>
               </div>
 
               <div className="dashboard-access-inherited-note" style={{ marginBottom: "12px" }}>
@@ -187,7 +203,7 @@ export default function AllRegistrationsDashboard() {
                       const school = student.schoolDistrictId?.schoolName || schoolMap.get(String(student.schoolDistrictId))?.schoolName || student.schoolNameManual || "-";
                       return (
                         <tr key={student._id}>
-                          <td>{index + 1}</td>
+                          <td>{(page - 1) * pageSize + index + 1}</td>
                           <td>{student.studentSrn}</td>
                           <td>{student.name}</td>
                           <td>{student.fatherName}</td>
@@ -195,7 +211,7 @@ export default function AllRegistrationsDashboard() {
                           <td>{block}</td>
                           <td>{school}</td>
                           <td>
-                            <Link to={`/official/registrations/${code}/edit/${student._id}`}>Edit</Link>
+                            <><Link to={`/official/registrations/${code}/edit/${student._id}`}>Edit</Link>{" "}<button type="button" className="danger" disabled={deletingId === String(student._id)} onClick={() => deleteRegistration(student)}>{deletingId === String(student._id) ? "Deleting…" : "Delete"}</button></>
                           </td>
                           <td>
                             <a href={`${API_BASE_URL}/students/acknowledgement/${student.slipId}`} target="_blank" rel="noreferrer">Acknowledgement</a>
@@ -208,6 +224,14 @@ export default function AllRegistrationsDashboard() {
                     {loading && <tr><td colSpan="10" className="empty-row">Loading registrations…</td></tr>}
                   </tbody>
                 </table>
+              </div>
+              <div className="level1-toolbar-head" style={{ marginTop: "14px", alignItems: "center" }}>
+                <span>Showing {total ? ((page - 1) * pageSize + 1) : 0}–{Math.min(page * pageSize, total)} of {total} registrations</span>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button type="button" className="secondary" disabled={page <= 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</button>
+                  <span>Page {page} of {Math.max(1, Math.ceil(total / pageSize))}</span>
+                  <button type="button" className="secondary" disabled={page >= Math.ceil(total / pageSize) || loading} onClick={() => setPage((value) => value + 1)}>Next</button>
+                </div>
               </div>
             </>
           )}
