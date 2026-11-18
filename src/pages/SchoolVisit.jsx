@@ -45,13 +45,32 @@ function buildQuery({ startDate, endDate, status, page = 1 } = {}) {
   return params.toString();
 }
 
-function CreateVisitModal({ onClose, onCreated }) {
+function CreateVisitModal({ onClose, onCreated, editingVisit = null }) {
   const [districts, setDistricts] = useState([]), [blocks, setBlocks] = useState([]), [schools, setSchools] = useState([]);
-  const [form, setForm] = useState({ visitDate: "", districtId: "", blockId: "", schoolId: "", description: "" });
+  const [form, setForm] = useState({
+    visitDate: editingVisit?.visitDate ? String(editingVisit.visitDate).slice(0, 10) : "",
+    districtId: editingVisit?.districtId?._id || editingVisit?.districtId || "",
+    blockId: editingVisit?.blockId?._id || editingVisit?.blockId || "",
+    schoolId: editingVisit?.schoolId?._id || editingVisit?.schoolId || "",
+    travelledFrom: editingVisit?.travelledFrom || "",
+    distanceKm: editingVisit?.distanceKm ?? "",
+    description: editingVisit?.description || "",
+  });
   const [error, setError] = useState(""), [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get("/regions/my-districts").then((r) => setDistricts(unwrap(r) || [])).catch((e) => setError(e.response?.data?.message || "Unable to load districts."));
+    if (editingVisit?.districtId) {
+      const districtId = editingVisit.districtId?._id || editingVisit.districtId;
+      const blockId = editingVisit.blockId?._id || editingVisit.blockId;
+      Promise.all([
+        api.get(`/regions/my-blocks?districtId=${districtId}`),
+        api.get(`/regions/my-schools?districtId=${districtId}&blockId=${blockId}`),
+      ]).then(([b, sc]) => {
+        setBlocks(unwrap(b) || []);
+        setSchools(unwrap(sc) || []);
+      }).catch((e) => setError(e.response?.data?.message || "Unable to load visit region."));
+    }
   }, []);
 
   const district = async (e) => {
@@ -74,12 +93,17 @@ function CreateVisitModal({ onClose, onCreated }) {
 
   const submit = async (e) => {
     e.preventDefault(); setError(""); setSaving(true);
-    try { const visit = unwrap(await api.post("/school-visits", form)); onCreated(visit); }
-    catch (err) { setError(err.response?.data?.message || "Unable to create visit."); }
+    try {
+      const visit = unwrap(editingVisit
+        ? await api.put(`/school-visits/${editingVisit._id}`, form)
+        : await api.post("/school-visits", form));
+      onCreated(visit);
+    }
+    catch (err) { setError(err.response?.data?.message || `Unable to ${editingVisit ? "update" : "create"} visit.`); }
     finally { setSaving(false); }
   };
 
-  return <div className="modal-backdrop"><div className="modal-card school-visit-modal"><div className="modal-head"><div><div className="eyebrow">SCHOOL VISIT</div><h2>Create Your Visit</h2></div><button className="icon-button" onClick={onClose}>×</button></div><form onSubmit={submit}><div className="form-grid"><label className="field"><span>Visit Date *</span><input type="date" value={form.visitDate} onChange={(e)=>setForm({...form,visitDate:e.target.value})} required/></label><label className="field"><span>District *</span><SearchableSelect value={form.districtId} onChange={district} required><option value="">Select district</option>{districts.map(d=><option key={d._id} value={d._id}>{d.districtName}</option>)}</SearchableSelect></label><label className="field"><span>Block *</span><SearchableSelect value={form.blockId} onChange={block} disabled={!form.districtId} required><option value="">Select block</option>{blocks.map(b=><option key={b._id} value={b._id}>{b.blockName}</option>)}</SearchableSelect></label><label className="field"><span>School *</span><SearchableSelect value={form.schoolId} onChange={(e)=>setForm({...form,schoolId:e.target.value})} disabled={!form.blockId} required><option value="">Select school</option>{schools.map(s=><option key={s._id} value={s._id}>{s.schoolName}{s.schoolCode ? ` · ${s.schoolCode}` : ""}</option>)}</SearchableSelect></label><label className="field field-full"><span>Description</span><textarea rows="3" value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} placeholder="Purpose / plan for this school visit"/></label></div>{error&&<div className="error">{error}</div>}<div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={saving}>{saving?"Creating…":"Create"}</button></div></form></div></div>;
+  return <div className="modal-backdrop"><div className="modal-card school-visit-modal"><div className="modal-head"><div><div className="eyebrow">SCHOOL VISIT</div><h2>{editingVisit ? "Edit Your Visit" : "Create Your Visit"}</h2></div><button className="icon-button" onClick={onClose}>×</button></div><form onSubmit={submit}><div className="form-grid"><label className="field"><span>Visit Date *</span><input type="date" value={form.visitDate} onChange={(e)=>setForm({...form,visitDate:e.target.value})} required/></label><label className="field"><span>District *</span><SearchableSelect value={form.districtId} onChange={district} required><option value="">Select district</option>{districts.map(d=><option key={d._id} value={d._id}>{d.districtName}</option>)}</SearchableSelect></label><label className="field"><span>Block *</span><SearchableSelect value={form.blockId} onChange={block} disabled={!form.districtId} required><option value="">Select block</option>{blocks.map(b=><option key={b._id} value={b._id}>{b.blockName}</option>)}</SearchableSelect></label><label className="field"><span>School *</span><SearchableSelect value={form.schoolId} onChange={(e)=>setForm({...form,schoolId:e.target.value})} disabled={!form.blockId} required><option value="">Select school</option>{schools.map(s=><option key={s._id} value={s._id}>{s.schoolName}{s.schoolCode ? ` · ${s.schoolCode}` : ""}</option>)}</SearchableSelect></label><label className="field"><span>Travelled From</span><input value={form.travelledFrom} onChange={(e)=>setForm({...form,travelledFrom:e.target.value})} placeholder="Enter starting location"/></label><label className="field"><span>Distance in KM</span><input type="number" min="0" step="0.1" value={form.distanceKm} onChange={(e)=>setForm({...form,distanceKm:e.target.value})} placeholder="Enter distance in KM"/></label><label className="field field-full"><span>Description</span><textarea rows="3" value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} placeholder="Purpose / plan for this school visit"/></label></div>{error&&<div className="error">{error}</div>}<div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={saving}>{saving?(editingVisit?"Updating…":"Creating…"):(editingVisit?"Update":"Create")}</button></div></form></div></div>;
 }
 
 export default function SchoolVisit() {
@@ -92,6 +116,7 @@ function SchoolVisitList() {
   const navigate = useNavigate();
   const [visits, setVisits] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingVisit, setEditingVisit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filters, setFilters] = useState({ startDate: "", endDate: "", status: "YET_TO_VISIT" });
@@ -111,6 +136,14 @@ function SchoolVisitList() {
 
   useEffect(() => { load(1, filters); }, [filters]);
 
+  const deleteVisit = async (visit) => {
+    if (!window.confirm("Delete this school visit? This will also delete its saved visit form. This action cannot be undone.")) return;
+    try {
+      await api.delete(`/school-visits/${visit._id}`);
+      await load(page, filters);
+    } catch (e) { setError(e.response?.data?.message || "Unable to delete visit."); }
+  };
+
   const updateFilter = (key, value) => { setPage(1); setFilters((f) => ({ ...f, [key]: value })); };
   const resetFilters = () => { setPage(1); setFilters({ startDate: "", endDate: "", status: "YET_TO_VISIT" }); };
   const exportReport = async () => {
@@ -127,12 +160,23 @@ function SchoolVisitList() {
     <div className="school-visit-filters panel"><div className="filter-field"><span>Start Date</span><input type="date" value={filters.startDate} onChange={(e)=>updateFilter("startDate",e.target.value)}/></div><div className="filter-field"><span>End Date</span><input type="date" value={filters.endDate} onChange={(e)=>updateFilter("endDate",e.target.value)}/></div><div className="filter-field"><span>Visiting Status</span><SearchableSelect value={filters.status} onChange={(e)=>updateFilter("status",e.target.value)}><option value="YET_TO_VISIT">Yet to visit</option><option value="VISITED">Visited</option></SearchableSelect></div><button className="secondary filter-reset" onClick={resetFilters}>Reset</button></div>
     {error&&<div className="error">{error}</div>}
     <div className="school-visit-list-meta"><strong>{pagination.total} visit{pagination.total===1?"":"s"}</strong><span>Showing maximum 50 per page · sorted oldest to newest</span></div>
-    {loading?<div className="panel">Loading visits…</div>:visits.length===0?<div className="panel school-visit-empty"><h3>No visits found</h3><p>Try another date range/status or create a new school visit.</p><button className="primary" onClick={()=>setShowCreate(true)}>Create Your Visits</button></div>:<div className="school-visit-grid">{visits.map(v=><VisitCard key={v._id} visit={v} onVisit={()=>navigate(`/official/school-visits/${v._id}`)}/>)}</div>}
+    {loading?<div className="panel">Loading visits…</div>:visits.length===0?<div className="panel school-visit-empty"><h3>No visits found</h3><p>Try another date range/status or create a new school visit.</p><button className="primary" onClick={()=>setShowCreate(true)}>Create Your Visits</button></div>:<div className="school-visit-grid">{visits.map(v=><VisitCard key={v._id} visit={v} onVisit={()=>navigate(`/official/school-visits/${v._id}`)} onEdit={()=>setEditingVisit(v)} onDelete={()=>deleteVisit(v)}/>)}</div>}
     {pagination.totalPages>1&&<div className="school-visit-pagination"><button className="secondary" disabled={page<=1||loading} onClick={()=>{const p=page-1;setPage(p);load(p,filters)}}>Previous</button><span>Page {page} of {pagination.totalPages}</span><button className="secondary" disabled={page>=pagination.totalPages||loading} onClick={()=>{const p=page+1;setPage(p);load(p,filters)}}>Next</button></div>}
-    {showCreate&&<CreateVisitModal onClose={()=>setShowCreate(false)} onCreated={()=>{setShowCreate(false);setPage(1);load(1,filters)}}/>}</section></OfficialShell>;
+    {showCreate&&<CreateVisitModal onClose={()=>setShowCreate(false)} onCreated={()=>{setShowCreate(false);setPage(1);load(1,filters)}}/>}
+    {editingVisit&&<CreateVisitModal editingVisit={editingVisit} onClose={()=>setEditingVisit(null)} onCreated={()=>{setEditingVisit(null);load(page,filters)}}/>}</section></OfficialShell>;
 }
 
-function VisitCard({visit,onVisit}) { const visited=visit.status==="VISITED"; return <article className={`school-visit-card ${visited?"visited":""}`}><div className="visit-card-top"><span className={`visit-status ${visited?"visited":"planned"}`}>{visited?"Visited":"Yet to visit"}</span><strong>{new Date(visit.visitDate).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</strong></div><h3>{visit.schoolId?.schoolName||"School"}</h3><p className="visit-region">{visit.districtId?.districtName} · {visit.blockId?.blockName}</p><p className="visit-description">{visit.description||"No description added."}</p><div className="visit-card-footer"><span>{visited?"Form & attachment submitted":"Visit planned"}</span><button className={visited?"secondary":"primary"} onClick={onVisit}>{visited?"View":"Visit"}</button></div></article> }
+function VisitCard({visit,onVisit,onEdit,onDelete}) {
+  const visited=visit.status==="VISITED";
+  return <article className={`school-visit-card ${visited?"visited":""}`}>
+    <div className="visit-card-top"><span className={`visit-status ${visited?"visited":"planned"}`}>{visited?"Visited":"Yet to visit"}</span><strong>{new Date(visit.visitDate).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})}</strong></div>
+    <h3>{visit.schoolId?.schoolName||"School"}</h3><p className="visit-region">{visit.districtId?.districtName} · {visit.blockId?.blockName}</p>
+    {visit.travelledFrom&&<p className="visit-region">Travelled From: {visit.travelledFrom}</p>}
+    {visit.distanceKm!==null&&visit.distanceKm!==undefined&&<p className="visit-region">Distance: {visit.distanceKm} KM</p>}
+    <p className="visit-description">{visit.description||"No description added."}</p>
+    <div className="visit-card-footer"><span>{visited?"Form & attachment submitted":"Visit planned"}</span><div className="school-visit-card-actions"><button className="secondary" onClick={onEdit}>Edit</button><button className="secondary" onClick={onDelete}>Delete</button><button className={visited?"secondary":"primary"} onClick={onVisit}>{visited?"View":"Visit"}</button></div></div>
+  </article>;
+}
 
 function SchoolVisitForm({id}) {
   const navigate=useNavigate(); const {user}=useAuth(); const [visit,setVisit]=useState(null),[form,setForm]=useState(emptyForm(user?.name||"")),[loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[uploading,setUploading]=useState(false),[error,setError]=useState(""),[message,setMessage]=useState(""),[file,setFile]=useState(null);

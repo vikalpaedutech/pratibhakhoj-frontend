@@ -33,8 +33,9 @@ const blank = {
 };
 
 export default function StudentRegister({ editMode = false, officialMode = false, allRegistrationsMode = false }) {
-  const { type, srn: editSrn, id: editId } = useParams();
-  const examType = type === "HS100" ? "HS100" : "MB";
+  const { type, examType: routeExamType, srn: editSrn, id: editId } = useParams();
+  const selectedExamType = type || routeExamType;
+  const examType = selectedExamType === "HS100" ? "HS100" : "MB";
   const examName = examType === "MB" ? "Mission Buniyaad" : "Haryana Super 100";
   const classOfStudent = examType === "MB" ? 8 : 10;
 
