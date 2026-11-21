@@ -11,7 +11,8 @@ const EXAMS = {
 
 export default function OfficialDashboard() {
   const { examType } = useParams();
-  const { verificationAccess = [] } = useAuth();
+  const { verificationAccess = [], role, permissions = [] } = useAuth();
+  const hasHomeAccess = role?.code !== "DSS" || permissions.includes("OFFICIAL_HOME");
   const selectedExam = EXAMS[examType] ? examType : "";
   const [data, setData] = useState(null);
   const [verificationSummary, setVerificationSummary] = useState(null);
@@ -20,6 +21,7 @@ export default function OfficialDashboard() {
   const hasVerificationAccess = verificationAccess.length > 0;
 
   useEffect(() => {
+    if (!hasHomeAccess) return undefined;
     let active = true;
     api.get("/students/dashboard")
       .then((response) => {
@@ -38,7 +40,7 @@ export default function OfficialDashboard() {
     }
 
     return () => { active = false; };
-  }, [hasVerificationAccess]);
+  }, [hasVerificationAccess, hasHomeAccess]);
 
   const counts = useMemo(() => {
     const byExamType = data?.byExamType || [];
@@ -52,7 +54,7 @@ export default function OfficialDashboard() {
 
   return (
     <OfficialShell>
-      <section className="official-dashboard">
+      {!hasHomeAccess ? null : <section className="official-dashboard">
         {error && <div className="error">{error}</div>}
 
         {hasVerificationAccess && verificationSummary && (
@@ -76,7 +78,7 @@ export default function OfficialDashboard() {
             </Link>
           ))}
         </div>
-      </section>
+      </section>}
     </OfficialShell>
   );
 }

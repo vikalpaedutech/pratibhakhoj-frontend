@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import Layout from "./components/Layout";
 import Landing from "./pages/Landing";
 import StudentRegister from "./pages/StudentRegister";
@@ -34,13 +34,16 @@ import SchoolCenterPreferenceForm from "./pages/SchoolCenterPreferenceForm";
 import SchoolCenterPreferenceSchools from "./pages/SchoolCenterPreferenceSchools";
 import AttendanceSheetDlc from "./pages/AttendanceSheetDlc";
 
-function Protected({ children, admin = false, schoolVisit = false, dashboardCode = "" }) {
-  const { user, role, loading, schoolVisitAccess, dashboardAccess = [] } = useAuth();
+function Protected({ children, admin = false, schoolVisit = false, dashboardCode = "", permissionCode = "", permissionByParam = null }) {
+  const { user, role, loading, schoolVisitAccess, dashboardAccess = [], permissions = [] } = useAuth();
+  const params = useParams();
+  const resolvedPermissionCode = permissionByParam?.[params.type || params.examType] || permissionCode;
   if (loading) return <div className="loading">Loading…</div>;
   if (!user) return <Navigate to="/official/login" replace />;
   if (admin && role?.code !== "ADMIN") return <Navigate to="/official" replace />;
   if (schoolVisit && !schoolVisitAccess) return <Navigate to="/official" replace />;
   if (dashboardCode && role?.code !== "ADMIN" && !dashboardAccess.includes(dashboardCode)) return <Navigate to="/official" replace />;
+  if (resolvedPermissionCode && role?.code === "DSS" && !permissions.includes(resolvedPermissionCode)) return <Navigate to="/official" replace />;
   return children;
 }
 
@@ -63,18 +66,18 @@ export default function App() {
         <Route path="/official/verify-email" element={<VerifyEmail />} />
         <Route path="/official/create-password" element={<CreatePassword />} />
         <Route path="/official" element={<Protected><OfficialDashboard /></Protected>} />
-        <Route path="/official/register/:type" element={<Protected><StudentRegister officialMode /></Protected>} />
-        <Route path="/official/register/:type/edit/:srn" element={<Protected><StudentRegister officialMode editMode /></Protected>} />
-        <Route path="/official/dashboard/:examType" element={<Protected><Level1Dashboard /></Protected>} />
-        <Route path="/official/registrations/:examType" element={<Protected><AllRegistrationsDashboard /></Protected>} />
-        <Route path="/official/registrations/:examType/edit/:id" element={<Protected><StudentRegister officialMode allRegistrationsMode editMode /></Protected>} />
+        <Route path="/official/register/:type" element={<Protected permissionByParam={{ MB: "OFFICIAL_MB_REGISTRATIONS", HS100: "OFFICIAL_HS100_REGISTRATIONS" }}><StudentRegister officialMode /></Protected>} />
+        <Route path="/official/register/:type/edit/:srn" element={<Protected permissionByParam={{ MB: "OFFICIAL_MB_REGISTRATIONS", HS100: "OFFICIAL_HS100_REGISTRATIONS" }}><StudentRegister officialMode editMode /></Protected>} />
+        <Route path="/official/dashboard/:examType" element={<Protected permissionByParam={{ MB: "OFFICIAL_MB_DASHBOARD", HS100: "OFFICIAL_HS100_DASHBOARD" }}><Level1Dashboard /></Protected>} />
+        <Route path="/official/registrations/:examType" element={<Protected permissionCode="OFFICIAL_REGISTRATION_MANAGEMENT"><AllRegistrationsDashboard /></Protected>} />
+        <Route path="/official/registrations/:examType/edit/:id" element={<Protected permissionCode="OFFICIAL_REGISTRATION_MANAGEMENT"><StudentRegister officialMode allRegistrationsMode editMode /></Protected>} />
         <Route path="/official/students" element={<Protected><StudentList /></Protected>} />
-        <Route path="/official/bulk" element={<Protected><BulkStudentUpload /></Protected>} />
-        <Route path="/official/school-visits" element={<Protected schoolVisit><SchoolVisit /></Protected>} />
-        <Route path="/official/school-visits/:id" element={<Protected schoolVisit><SchoolVisit /></Protected>} />
-        <Route path="/official/dashboards/registrations-by-users" element={<Protected dashboardCode="REGISTRATIONS_BY_USERS"><RegistrationsByUsers /></Protected>} />
-        <Route path="/official/dashboards/verification-by-users" element={<Protected dashboardCode="VERIFICATION_BY_USERS"><VerificationByUsers /></Protected>} />
-        <Route path="/official/dashboards/school-visits" element={<Protected dashboardCode="SCHOOL_VISIT_DASHBOARD"><SchoolVisitDashboard /></Protected>} />
+        <Route path="/official/bulk" element={<Protected permissionCode="OFFICIAL_BULK_REGISTRATION"><BulkStudentUpload /></Protected>} />
+        <Route path="/official/school-visits" element={<Protected schoolVisit permissionCode="OFFICIAL_SCHOOL_VISIT"><SchoolVisit /></Protected>} />
+        <Route path="/official/school-visits/:id" element={<Protected schoolVisit permissionCode="OFFICIAL_SCHOOL_VISIT"><SchoolVisit /></Protected>} />
+        <Route path="/official/dashboards/registrations-by-users" element={<Protected dashboardCode="REGISTRATIONS_BY_USERS" permissionCode="OFFICIAL_REPORT_DASHBOARDS"><RegistrationsByUsers /></Protected>} />
+        <Route path="/official/dashboards/verification-by-users" element={<Protected dashboardCode="VERIFICATION_BY_USERS" permissionCode="OFFICIAL_REPORT_DASHBOARDS"><VerificationByUsers /></Protected>} />
+        <Route path="/official/dashboards/school-visits" element={<Protected dashboardCode="SCHOOL_VISIT_DASHBOARD" permissionCode="OFFICIAL_REPORT_DASHBOARDS"><SchoolVisitDashboard /></Protected>} />
         <Route path="/admin" element={<Protected admin={true}><AdminRegions /></Protected>} />
         <Route path="/admin/regions" element={<Protected admin={true}><AdminRegions /></Protected>} />
         <Route path="/admin/users" element={<Protected admin={true}><AdminUsers /></Protected>} />
@@ -84,10 +87,10 @@ export default function App() {
         <Route path="/admin/permissions" element={<Protected admin={true}><AdminPermissions /></Protected>} />
         <Route path="/admin/exam-controller" element={<Protected admin={true}><ExamController /></Protected>} />
         <Route path="/admin/examination-centers" element={<Protected admin={true}><ExaminationCenters /></Protected>} />
-        <Route path="/school-center-preference" element={<Protected><SchoolCenterPreference /></Protected>} />
-        <Route path="/school-center-preference/form" element={<Protected><SchoolCenterPreferenceForm /></Protected>} />
-        <Route path="/school-center-preference/blocks/:blockId/schools" element={<Protected><SchoolCenterPreferenceSchools /></Protected>} />
-        <Route path="/official/verification" element={<Protected><VerificationPage /></Protected>} />
+        <Route path="/school-center-preference" element={<Protected permissionCode="SCHOOL_CENTER_PREFERENCE"><SchoolCenterPreference /></Protected>} />
+        <Route path="/school-center-preference/form" element={<Protected permissionCode="SCHOOL_CENTER_PREFERENCE"><SchoolCenterPreferenceForm /></Protected>} />
+        <Route path="/school-center-preference/blocks/:blockId/schools" element={<Protected permissionCode="SCHOOL_CENTER_PREFERENCE"><SchoolCenterPreferenceSchools /></Protected>} />
+        <Route path="/official/verification" element={<Protected permissionCode="OFFICIAL_VERIFICATION"><VerificationPage /></Protected>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

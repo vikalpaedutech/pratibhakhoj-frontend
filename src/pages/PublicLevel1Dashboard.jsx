@@ -8,6 +8,7 @@ import PortalHeader from "../components/PortalHeader";
 import PortalFooter from "../components/PortalFooter";
 import { LEVEL1_DASHBOARDS, dashboardCodeFor } from "../config/dashboardAccess";
 import SearchableSelect from "../components/SearchableSelect";
+import Select from "react-select";
 
 const EXAMS = {
   MB: { label: "Mission Buniyaad", classLabel: "Class 8" },
@@ -163,182 +164,154 @@ function DashboardNav({ examType, current }) {
 
 function DistrictBlockDashboard({ examType, exam }) {
   const [districts, setDistricts] = useState([]);
+  const [districtOptions, setDistrictOptions] = useState([]);
+  const [districtId, setDistrictId] = useState("");
+  const [appliedDistrictId, setAppliedDistrictId] = useState("");
   const [total, setTotal] = useState(0);
   const [openDistricts, setOpenDistricts] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    api.get(`/students/public-level1-dashboard/${examType}`)
-      .then((response) => {
-        if (cancelled) return;
-        const data = unwrap(response) || {};
-        const rows = data.districts || [];
-        setDistricts(rows);
-        setTotal(data.totalRegistrations || 0);
-        setOpenDistricts(new Set());
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.response?.data?.message || "Unable to load dashboard.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [examType]);
-
-  const toggleDistrict = (id) => {
-    setOpenDistricts((current) => {
-      const next = new Set(current);
-      const key = String(id);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
+  const load = async (selectedDistrictId = districtId) => {
+    setLoading(true); setError("");
+    try {
+      const params = new URLSearchParams();
+      if (selectedDistrictId) params.set("districtId", selectedDistrictId);
+      const data = unwrap(await api.get(`/students/public-level1-dashboard/${examType}?${params.toString()}`)) || {};
+      setDistricts(data.districts || []); setTotal(data.totalRegistrations || 0); setOpenDistricts(new Set()); setAppliedDistrictId(selectedDistrictId || "");
+    } catch (err) { setError(err.response?.data?.message || "Unable to load dashboard."); }
+    finally { setLoading(false); }
   };
-
-  const expandAll = () => setOpenDistricts(new Set(districts.map((district) => String(district._id))));
+  useEffect(() => {
+    api.get("/regions/districts").then(response => setDistrictOptions(unwrap(response) || []))
+      .catch(err => setError(err.response?.data?.message || "Unable to load districts."));
+    load("");
+  }, [examType]);
+  const toggleDistrict = id => setOpenDistricts(current => {
+    const next = new Set(current); const key = String(id);
+    if (next.has(key)) next.delete(key); else next.add(key); return next;
+  });
+  const expandAll = () => setOpenDistricts(new Set(districts.map(d => String(d._id))));
   const collapseAll = () => setOpenDistricts(new Set());
+  const exportQuery = appliedDistrictId ? `&districtId=${encodeURIComponent(appliedDistrictId)}` : "";
 
-  return (
-    <DashboardShell examType={examType} exam={exam} current="district">
-      <div className="public-level1-summary public-level1-summary-single">
-        <div><span>Total Registrations</span><strong>{total}</strong></div>
-      </div>
-
-      <div className="public-level1-actions">
-        <button className="secondary" onClick={collapseAll} disabled={!districts.length}>District Wise</button>
-        <button className="secondary" onClick={expandAll} disabled={!districts.length}>Block Wise</button>
-      </div>
-
-      {loading && <div className="loading">Loading dashboard…</div>}
-      {error && <div className="error">{error}</div>}
-
-      {!loading && !error && (
-        <section className="district-accordion-list">
-          {districts.map((district, districtIndex) => {
-            const isOpen = openDistricts.has(String(district._id));
-            return (
-              <div className="district-accordion" key={district._id}>
-                <button className="district-accordion-head" onClick={() => toggleDistrict(district._id)}>
-                  <span className="district-accordion-title">
-                    <span className="district-serial">{districtIndex + 1}</span>
-                    <span className="district-accordion-name">
-                      <strong>{district.districtName}</strong>
-                      <small>Total Registration Count: {district.count}</small>
-                    </span>
-                  </span>
-                  <span className={`district-chevron ${isOpen ? "open" : ""}`}>⌄</span>
-                </button>
-
-                {isOpen && (
-                  <div className="district-accordion-body">
-                    <table className="public-dashboard-table">
-                      <thead><tr><th>#</th><th>Block Name</th><th>Count</th></tr></thead>
-                      <tbody>
-                        {district.blocks.map((block, blockIndex) => (
-                          <tr key={block._id}>
-                            <td>{blockIndex + 1}</td><td>{block.blockName}</td><td>{block.count}</td>
-                          </tr>
-                        ))}
-                        {!district.blocks.length && <tr><td colSpan="3" className="empty-row">No blocks available.</td></tr>}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </section>
-      )}
-    </DashboardShell>
-  );
+  return <DashboardShell examType={examType} exam={exam} current="district" exportQuery={exportQuery}>
+    <div className="school-dashboard-filter-card">
+      <div className="public-filter-field"><label>District</label><SearchableSelect value={districtId} onChange={e=>setDistrictId(e.target.value)}>
+        <option value="">All Districts</option>{districtOptions.map(d=><option key={d._id} value={d._id}>{d.districtName}</option>)}
+      </SearchableSelect></div>
+      <button className="primary public-filter-button" onClick={()=>load(districtId)} disabled={loading}>{loading?"Loading…":"Apply Filter"}</button>
+      <button className="secondary" onClick={()=>{setDistrictId("");load("");}} disabled={loading}>Clear Filter</button>
+    </div>
+    <div className="public-level1-summary public-level1-summary-single"><div><span>Total Registrations</span><strong>{total}</strong></div></div>
+    <div className="public-level1-actions">
+      <button className="secondary" onClick={collapseAll} disabled={!districts.length}>District Wise</button>
+      <button className="secondary" onClick={expandAll} disabled={!districts.length}>Block Wise</button>
+    </div>
+    {loading&&<div className="loading">Loading dashboard…</div>}{error&&<div className="error">{error}</div>}
+    {!loading&&!error&&<section className="district-accordion-list">{districts.map((district,index)=>{
+      const isOpen=openDistricts.has(String(district._id));
+      return <div className="district-accordion" key={district._id}>
+        <button className="district-accordion-head" onClick={()=>toggleDistrict(district._id)}>
+          <span className="district-accordion-title"><span className="district-serial">{index+1}</span><span className="district-accordion-name"><strong>{district.districtName}</strong><small>Total Registration Count: {district.count}</small></span></span>
+          <span className={`district-chevron ${isOpen?"open":""}`}>⌄</span>
+        </button>
+        {isOpen&&<div className="district-accordion-body"><table className="public-dashboard-table">
+          <thead><tr><th>#</th><th>Block Name</th><th>Count</th></tr></thead><tbody>
+            {district.blocks.map((block,i)=><tr key={block._id}><td>{i+1}</td><td>{block.blockName}</td><td>{block.count}</td></tr>)}
+            {!district.blocks.length&&<tr><td colSpan="3" className="empty-row">No blocks available.</td></tr>}
+          </tbody></table></div>}
+      </div>;
+    })}</section>}
+  </DashboardShell>;
 }
 
 function BlockSchoolDashboard({ examType, exam }) {
-  const [blocks, setBlocks] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [openBlocks, setOpenBlocks] = useState(new Set());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [blocks,setBlocks]=useState([]);
+  const [districts,setDistricts]=useState([]);
+  const [availableBlocks,setAvailableBlocks]=useState([]);
+  const [schoolTypeOptions,setSchoolTypeOptions]=useState([]);
+  const [filters,setFilters]=useState({districtId:"",blockId:"",schoolTypes:[],registrationCount:""});
+  const [appliedFilters,setAppliedFilters]=useState({districtId:"",blockId:"",schoolTypes:[],registrationCount:""});
+  const [total,setTotal]=useState(0);
+  const [openBlocks,setOpenBlocks]=useState(new Set());
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    api.get(`/students/public-level1-block-school-dashboard/${examType}`)
-      .then((response) => {
-        if (cancelled) return;
-        const data = unwrap(response) || {};
-        const rows = data.blocks || [];
-        setBlocks(rows);
-        setTotal(data.totalRegistrations || 0);
-        setOpenBlocks(new Set());
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err.response?.data?.message || "Unable to load dashboard.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [examType]);
+  const load=async(nextFilters=filters)=>{
+    setLoading(true);setError("");
+    try{
+      const params=new URLSearchParams();
+      if(nextFilters.districtId)params.set("districtId",nextFilters.districtId);
+      if(nextFilters.blockId)params.set("blockId",nextFilters.blockId);
+      if(nextFilters.schoolTypes?.length)params.set("schoolTypes",nextFilters.schoolTypes.join(","));
+      if(nextFilters.registrationCount.trim())params.set("registrationCount",nextFilters.registrationCount.trim());
+      const data=unwrap(await api.get(`/students/public-level1-block-school-dashboard/${examType}?${params.toString()}`))||{};
+      const rows=data.blocks||[];setBlocks(rows);setTotal(data.totalRegistrations||0);setOpenBlocks(new Set(rows.map(row=>String(row._id))));setAppliedFilters({...nextFilters,schoolTypes:[...(nextFilters.schoolTypes||[])]});
+    }catch(err){setError(err.response?.data?.message||"Unable to load dashboard.");}
+    finally{setLoading(false);}
+  };
+  useEffect(()=>{
+    Promise.all([api.get("/regions/districts"),api.get("/regions/schools")]).then(([dr,sr])=>{
+      setDistricts(unwrap(dr)||[]);
+      const types=[...new Set((unwrap(sr)||[]).map(row=>row.schoolType).filter(Boolean))].sort();
+      setSchoolTypeOptions(types.map(value=>({value,label:value})));
+    }).catch(err=>setError(err.response?.data?.message||"Unable to load filters."));
+    load({districtId:"",blockId:"",schoolTypes:[],registrationCount:""});
+  },[examType]);
+  useEffect(()=>{
+    if(!filters.districtId){setAvailableBlocks([]);return;}
+    api.get(`/regions/blocks?districtId=${filters.districtId}`).then(r=>setAvailableBlocks(unwrap(r)||[])).catch(()=>setAvailableBlocks([]));
+  },[filters.districtId]);
+  const toggle=id=>setOpenBlocks(current=>{const next=new Set(current);const key=String(id);if(next.has(key))next.delete(key);else next.add(key);return next;});
+  const expandAll=()=>setOpenBlocks(new Set(blocks.map(row=>String(row._id))));
+  const collapseAll=()=>setOpenBlocks(new Set());
+  const exportQuery=new URLSearchParams({
+    ...(appliedFilters.districtId?{districtId:appliedFilters.districtId}:{}),
+    ...(appliedFilters.blockId?{blockId:appliedFilters.blockId}:{}),
+    ...(appliedFilters.schoolTypes.length?{schoolTypes:appliedFilters.schoolTypes.join(",")}:{}),
+    ...(appliedFilters.registrationCount.trim()?{registrationCount:appliedFilters.registrationCount.trim()}:{}),
+  }).toString();
 
-  const toggle = (id) => setOpenBlocks((current) => {
-    const next = new Set(current); const key = String(id);
-    if (next.has(key)) next.delete(key); else next.add(key);
-    return next;
-  });
-
-  const expandAll = () => setOpenBlocks(new Set(blocks.map((block) => String(block._id))));
-  const collapseAll = () => setOpenBlocks(new Set());
-
-  return (
-    <DashboardShell examType={examType} exam={exam} current="block-school">
-      <div className="public-level1-summary public-level1-summary-single">
-        <div><span>Total Registrations</span><strong>{total}</strong></div>
+  return <DashboardShell examType={examType} exam={exam} current="block-school" exportQuery={exportQuery?`&${exportQuery}`:""}>
+    <div className="school-dashboard-filter-card" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12}}>
+      <div className="public-filter-field"><label>District</label><SearchableSelect value={filters.districtId} onChange={e=>setFilters(old=>({...old,districtId:e.target.value,blockId:""}))}>
+        <option value="">All Districts</option>{districts.map(d=><option key={d._id} value={d._id}>{d.districtName}</option>)}
+      </SearchableSelect></div>
+      <div className="public-filter-field"><label>Block</label><SearchableSelect value={filters.blockId} disabled={!filters.districtId} onChange={e=>setFilters(old=>({...old,blockId:e.target.value}))}>
+        <option value="">All Blocks</option>{availableBlocks.map(b=><option key={b._id} value={b._id}>{b.blockName}</option>)}
+      </SearchableSelect></div>
+      <div className="public-filter-field"><label>School Type</label><Select isMulti isClearable isSearchable options={schoolTypeOptions}
+        value={schoolTypeOptions.filter(option=>filters.schoolTypes.includes(option.value))}
+        onChange={options=>setFilters(old=>({...old,schoolTypes:(options||[]).map(option=>option.value)}))}
+        placeholder="Select school types…" menuPortalTarget={document.body}
+        styles={{menuPortal:base=>({...base,zIndex:99999}),control:base=>({...base,minHeight:42})}} /></div>
+      <div className="public-filter-field"><label>Registration Count (Below and Equal)</label>
+        <input value={filters.registrationCount} onChange={e=>setFilters(old=>({...old,registrationCount:e.target.value}))} placeholder="e.g. 0 or 0, 5, 10" />
       </div>
-      <div className="public-level1-actions">
-        <button className="secondary" onClick={collapseAll} disabled={!blocks.length}>Block Wise</button>
-        <button className="secondary" onClick={expandAll} disabled={!blocks.length}>School Wise</button>
+      <div style={{display:"flex",gap:8,alignItems:"end",flexWrap:"wrap"}}>
+        <button className="primary public-filter-button" onClick={()=>load(filters)} disabled={loading}>{loading?"Loading…":"Apply Filters"}</button>
+        <button className="secondary" onClick={()=>{const cleared={districtId:"",blockId:"",schoolTypes:[],registrationCount:""};setFilters(cleared);load(cleared);}} disabled={loading}>Clear Filters</button>
       </div>
-      {loading && <div className="loading">Loading dashboard…</div>}
-      {error && <div className="error">{error}</div>}
-      {!loading && !error && (
-        <section className="district-accordion-list">
-          {blocks.map((block, blockIndex) => {
-            const isOpen = openBlocks.has(String(block._id));
-            return (
-              <div className="district-accordion" key={block._id}>
-                <button className="district-accordion-head" onClick={() => toggle(block._id)}>
-                  <span className="district-accordion-title">
-                    <span className="district-serial">{blockIndex + 1}</span>
-                    <span className="district-accordion-name">
-                      <strong>{block.blockName}</strong>
-                      <small>Total Registration Count: {block.count}</small>
-                    </span>
-                  </span>
-                  <span className={`district-chevron ${isOpen ? "open" : ""}`}>⌄</span>
-                </button>
-                {isOpen && (
-                  <div className="district-accordion-body">
-                    <table className="public-dashboard-table">
-                      <thead><tr><th>#</th><th>School Name</th><th>Count</th></tr></thead>
-                      <tbody>
-                        {block.schools.map((school, schoolIndex) => (
-                          <tr key={school._id}><td>{schoolIndex + 1}</td><td>{school.schoolName}</td><td>{school.count}</td></tr>
-                        ))}
-                        {!block.schools.length && <tr><td colSpan="3" className="empty-row">No school registrations.</td></tr>}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </section>
-      )}
-    </DashboardShell>
-  );
+    </div>
+    <div className="public-level1-summary public-level1-summary-single"><div><span>Total Registrations</span><strong>{total}</strong></div></div>
+    <div className="public-level1-actions"><button className="secondary" onClick={collapseAll} disabled={!blocks.length}>Block Wise</button><button className="secondary" onClick={expandAll} disabled={!blocks.length}>School Wise</button></div>
+    {loading&&<div className="loading">Loading dashboard…</div>}{error&&<div className="error">{error}</div>}
+    {!loading&&!error&&<section className="district-accordion-list">{blocks.map((block,index)=>{
+      const isOpen=openBlocks.has(String(block._id));
+      return <div className="district-accordion" key={block._id}>
+        <button className="district-accordion-head" onClick={()=>toggle(block._id)}>
+          <span className="district-accordion-title"><span className="district-serial">{index+1}</span><span className="district-accordion-name"><strong>{block.blockName}</strong><small>Total Registration Count: {block.count}</small></span></span>
+          <span className={`district-chevron ${isOpen?"open":""}`}>⌄</span>
+        </button>
+        {isOpen&&<div className="district-accordion-body"><table className="public-dashboard-table">
+          <thead><tr><th>#</th><th>School Name</th><th>School Type</th><th>Count</th></tr></thead><tbody>
+            {block.schools.map((school,i)=><tr key={school._id}><td>{i+1}</td><td>{school.schoolName}</td><td>{school.schoolType||"-"}</td><td>{school.count}</td></tr>)}
+            {!block.schools.length&&<tr><td colSpan="4" className="empty-row">No school registrations.</td></tr>}
+          </tbody></table></div>}
+      </div>;
+    })}{!blocks.length&&<div className="public-dashboard-empty">No matching blocks or schools found.</div>}</section>}
+  </DashboardShell>;
 }
 
 function SchoolDashboard({ examType, exam }) {
@@ -454,7 +427,7 @@ function DashboardRootShell({ children }) {
   );
 }
 
-function DashboardShell({ examType, exam, current, children }) {
+function DashboardShell({ examType, exam, current, children, exportQuery = "" }) {
   const { user, role, dashboardAccess = [] } = useAuth();
   const isAdmin = role?.code === "ADMIN";
   const canExport = Boolean(user && (isAdmin || dashboardAccess.includes(dashboardCodeFor(examType, current))));
@@ -462,7 +435,7 @@ function DashboardShell({ examType, exam, current, children }) {
   const downloadExport = async () => {
     try {
       const response = await api.get(
-        `/students/public-level1-dashboard/${examType}/export?view=${current === "district" ? "district-block" : "block-school"}`,
+        `/students/public-level1-dashboard/${examType}/export?view=${current === "district" ? "district-block" : "block-school"}${exportQuery}`,
         { responseType: "blob" }
       );
       const url = URL.createObjectURL(response.data);
@@ -473,6 +446,24 @@ function DashboardShell({ examType, exam, current, children }) {
       URL.revokeObjectURL(url);
     } catch (error) {
       const message = error.response?.data?.message || "Unable to download report.";
+      alert(message);
+    }
+  };
+
+  const downloadDistrictWise = async () => {
+    try {
+      const response = await api.get(
+        `/students/public-level1-dashboard/${examType}/export?view=district-wise`,
+        { responseType: "blob" }
+      );
+      const url = URL.createObjectURL(response.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${examType}_district_wise_report.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      const message = error.response?.data?.message || "Unable to download district-wise report.";
       alert(message);
     }
   };
@@ -493,6 +484,9 @@ function DashboardShell({ examType, exam, current, children }) {
           <p>{exam.classLabel} registration dashboard.</p>
         </div>
         <div className="public-dashboard-detail-actions">
+          {user && current === "district" && (
+            <button className="secondary" onClick={downloadDistrictWise}>Download District Wise</button>
+          )}
           {canExport && current !== "school" && (
             <button className="primary" onClick={downloadExport}>Download Excel</button>
           )}

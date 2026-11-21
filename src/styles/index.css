@@ -920,3 +920,21 @@
 @media(max-width:600px) {
   .verification-load-more { flex-direction:column; }
 }
+
+/* Official MB / HS100 dashboard pagination */
+.official-level-pagination {
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  flex-wrap:wrap; margin:18px 0 6px; padding:14px 2px 4px;
+  color:#64748b; font-size:13px;
+}
+.official-level-pagination-info strong,
+.official-level-pagination-controls span strong { color:#24304a; }
+.official-level-pagination-controls {
+  display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
+}
+.official-level-pagination-controls span { padding:0 6px; font-weight:700; white-space:nowrap; }
+.official-level-pagination-controls button { min-width:72px; }
+@media(max-width:640px) {
+  .official-level-pagination { align-items:stretch; flex-direction:column; }
+  .official-level-pagination-controls { justify-content:flex-start; }
+}

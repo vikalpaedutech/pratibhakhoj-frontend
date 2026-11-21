@@ -7,26 +7,35 @@ export default function OfficialShell({ children }) {
   const { user, role, logout, verificationAccess = [], dashboardAccess = [], permissions = [], schoolVisitAccess = false } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const isDss = role?.code === "DSS";
+  const hasNavPermission = (code, fallback = true) => isDss ? permissions.includes(code) : fallback;
+
   const accessibleDashboards = role?.code === "ADMIN"
     ? LEVEL1_DASHBOARDS
-    : LEVEL1_DASHBOARDS.filter((item) => dashboardAccess.includes(item.code));
+    : LEVEL1_DASHBOARDS.filter((item) =>
+        dashboardAccess.includes(item.code) && hasNavPermission("OFFICIAL_LEVEL1_DASHBOARDS")
+      );
 
   const accessibleAllRegistrations = role?.code === "ADMIN"
     ? ALL_REGISTRATION_DASHBOARDS
-    : ALL_REGISTRATION_DASHBOARDS.filter((item) => dashboardAccess.includes(item.code));
+    : ALL_REGISTRATION_DASHBOARDS.filter((item) =>
+        dashboardAccess.includes(item.code) && hasNavPermission("OFFICIAL_REGISTRATION_MANAGEMENT")
+      );
 
   const accessibleReportDashboards = role?.code === "ADMIN"
     ? REPORT_DASHBOARDS
-    : REPORT_DASHBOARDS.filter((item) => dashboardAccess.includes(item.code));
+    : REPORT_DASHBOARDS.filter((item) =>
+        dashboardAccess.includes(item.code) && hasNavPermission("OFFICIAL_REPORT_DASHBOARDS")
+      );
 
   const nav = [
-    ["Dashboard", "/official"],
-    ["Mission Buniyaad Registrations", "/official/register/MB"],
-    ["Haryana Super 100 Registrations", "/official/register/HS100"],
-    ["Bulk Registration", "/official/bulk"],
-    ...(schoolVisitAccess ? [["School Visit", "/official/school-visits"]] : []),
-    ["Mission Buniyaad Dashboard", "/official/dashboard/MB"],
-    ["Haryana Super 100 Dashboard", "/official/dashboard/HS100"],
+    ...(hasNavPermission("OFFICIAL_HOME") ? [["Dashboard", "/official"]] : []),
+    ...(hasNavPermission("OFFICIAL_MB_REGISTRATIONS") ? [["Mission Buniyaad Registrations", "/official/register/MB"]] : []),
+    ...(hasNavPermission("OFFICIAL_HS100_REGISTRATIONS") ? [["Haryana Super 100 Registrations", "/official/register/HS100"]] : []),
+    ...(hasNavPermission("OFFICIAL_BULK_REGISTRATION") ? [["Bulk Registration", "/official/bulk"]] : []),
+    ...(schoolVisitAccess && hasNavPermission("OFFICIAL_SCHOOL_VISIT") ? [["School Visit", "/official/school-visits"]] : []),
+    ...(hasNavPermission("OFFICIAL_MB_DASHBOARD") ? [["Mission Buniyaad Dashboard", "/official/dashboard/MB"]] : []),
+    ...(hasNavPermission("OFFICIAL_HS100_DASHBOARD") ? [["Haryana Super 100 Dashboard", "/official/dashboard/HS100"]] : []),
     ...(accessibleAllRegistrations.length
       ? [["Registration Management", null], ...accessibleAllRegistrations.map((item) => [item.label, item.path])]
       : []),
@@ -34,9 +43,11 @@ export default function OfficialShell({ children }) {
       ? [["Dashboards", null], ...accessibleDashboards.map((item) => [item.label, item.path])]
       : []),
     ...(accessibleReportDashboards.length
-      ? [["Dashboards", null], ...accessibleReportDashboards.map((item) => [item.label, item.path])]
+      ? [["Reports", null], ...accessibleReportDashboards.map((item) => [item.label, item.path])]
       : []),
-    ...(verificationAccess.length ? [["Verification", "/official/verification"]] : []),
+    ...(verificationAccess.length && hasNavPermission("OFFICIAL_VERIFICATION")
+      ? [["Verification", "/official/verification"]]
+      : []),
     ...(role?.code === "ADMIN" || permissions.includes("SCHOOL_CENTER_PREFERENCE")
       ? [["School Center Preference", "/school-center-preference"]]
       : []),

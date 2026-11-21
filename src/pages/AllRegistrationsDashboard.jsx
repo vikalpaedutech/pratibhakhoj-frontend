@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 import OfficialShell from "../components/OfficialShell";
 import { api, unwrap, API_BASE_URL } from "../api/client";
 import { allRegistrationCodeFor } from "../config/dashboardAccess";
@@ -13,6 +13,7 @@ const EXAMS = {
 
 export default function AllRegistrationsDashboard() {
   const { examType = "MB" } = useParams();
+  const location = useLocation();
   const code = String(examType).toUpperCase();
   const exam = EXAMS[code] || EXAMS.MB;
   const requiredAccess = allRegistrationCodeFor(code);
@@ -23,10 +24,10 @@ export default function AllRegistrationsDashboard() {
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [schools, setSchools] = useState([]);
-  const [filters, setFilters] = useState({ search: "", districtId: "", blockId: "", schoolId: "" });
+  const [filters, setFilters] = useState(() => location.state?.returnFilters || { search: "", districtId: "", blockId: "", schoolId: "" });
   const [selected, setSelected] = useState(new Set());
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => location.state?.returnPage || 1);
   const pageSize = 50;
   const [deletingId, setDeletingId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,16 +38,16 @@ export default function AllRegistrationsDashboard() {
   const blockMap = useMemo(() => new Map(blocks.map((item) => [String(item._id), item])), [blocks]);
   const schoolMap = useMemo(() => new Map(schools.map((item) => [String(item._id), item])), [schools]);
 
-  const load = async () => {
+  const load = async (activeFilters = filters) => {
     if (!isAllowed) return;
     setLoading(true);
     setError("");
     try {
       const params = new URLSearchParams({ examType: code, limit: String(pageSize), page: String(page) });
-      if (filters.search.trim()) params.set("search", filters.search.trim());
-      if (filters.districtId) params.set("districtId", filters.districtId);
-      if (filters.blockId) params.set("blockDistrictId", filters.blockId);
-      if (filters.schoolId) params.set("schoolDistrictId", filters.schoolId);
+      if (activeFilters.search.trim()) params.set("search", activeFilters.search.trim());
+      if (activeFilters.districtId) params.set("districtId", activeFilters.districtId);
+      if (activeFilters.blockId) params.set("blockDistrictId", activeFilters.blockId);
+      if (activeFilters.schoolId) params.set("schoolDistrictId", activeFilters.schoolId);
 
       const data = unwrap(await api.get(`/students/all-registrations/${code}?${params.toString()}`)) || {};
       setStudents(data.students || []);
@@ -58,6 +59,13 @@ export default function AllRegistrationsDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (location.state?.returnFilters) {
+      setFilters(location.state.returnFilters);
+      setPage(location.state.returnPage || 1);
+    }
+  }, [location.key]);
 
   useEffect(() => {
     if (authLoading || !isAllowed) return;
@@ -181,6 +189,11 @@ export default function AllRegistrationsDashboard() {
                   {schools.map((school) => <option key={school._id} value={school._id}>{school.schoolName}</option>)}
                 </SearchableSelect>
                 <button className="secondary" onClick={() => { if (page === 1) load(); else setPage(1); }} disabled={loading}>{loading ? "Loading…" : "Search"}</button>
+                <button className="secondary" onClick={() => {
+                  const cleared = { search: "", districtId: "", blockId: "", schoolId: "" };
+                  setFilters(cleared); setPage(1);
+                  if (page === 1) load(cleared);
+                }} disabled={loading}>Clear Filters</button>
               </div>
 
               <div className="dashboard-access-inherited-note" style={{ marginBottom: "12px" }}>
@@ -211,7 +224,7 @@ export default function AllRegistrationsDashboard() {
                           <td>{block}</td>
                           <td>{school}</td>
                           <td>
-                            <><Link to={`/official/registrations/${code}/edit/${student._id}`}>Edit</Link>{" "}<button type="button" className="danger" disabled={deletingId === String(student._id)} onClick={() => deleteRegistration(student)}>{deletingId === String(student._id) ? "Deleting…" : "Delete"}</button></>
+                            <><Link to={`/official/registrations/${code}/edit/${student._id}`} state={{ returnFilters: filters, returnPage: page }}>Edit</Link>{" "}<button type="button" className="danger" disabled={deletingId === String(student._id)} onClick={() => deleteRegistration(student)}>{deletingId === String(student._id) ? "Deleting…" : "Delete"}</button></>
                           </td>
                           <td>
                             <a href={`${API_BASE_URL}/students/acknowledgement/${student.slipId}`} target="_blank" rel="noreferrer">Acknowledgement</a>

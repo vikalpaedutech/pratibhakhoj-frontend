@@ -24,6 +24,8 @@ export default function Level1Dashboard() {
   const { examType = "MB" } = useParams();
   const exam = EXAMS[examType] || EXAMS.MB;
   const [students, setStudents] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 100, total: 0, totalPages: 0 });
+  const [page, setPage] = useState(1);
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [schools, setSchools] = useState([]);
@@ -38,17 +40,18 @@ export default function Level1Dashboard() {
   const visibleBlocks = useMemo(() => allowed(blocks, access, "block"), [blocks, access]);
   const visibleSchools = useMemo(() => allowed(schools, access, "school"), [schools, access]);
 
-  const load = async () => {
+  const load = async (requestedPage = page) => {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ examType, classOfStudent: String(exam.classOfStudent), limit: "100" });
+      const params = new URLSearchParams({ examType, classOfStudent: String(exam.classOfStudent), limit: "100", page: String(requestedPage) });
       if (filters.search) params.set("search", filters.search);
       if (filters.districtId) params.set("districtId", filters.districtId);
       if (filters.blockId) params.set("blockDistrictId", filters.blockId);
       if (filters.schoolId) params.set("schoolDistrictId", filters.schoolId);
       const data = unwrap(await api.get(`/students?${params.toString()}`));
       setStudents(data.students || []);
+      setPagination(data.pagination || { page: requestedPage, limit: 100, total: (data.students || []).length, totalPages: 1 });
       setSelected(new Set());
     } catch (e) {
       setError(e.response?.data?.message || "Unable to load dashboard.");
@@ -67,7 +70,7 @@ export default function Level1Dashboard() {
     }).catch((e) => setError(e.response?.data?.message || "Unable to load region access."));
   }, []);
 
-  useEffect(() => { load(); }, [examType]);
+  useEffect(() => { load(page); }, [examType, page]);
 
   useEffect(() => {
     if (!filters.districtId) {
@@ -85,6 +88,11 @@ export default function Level1Dashboard() {
     }
     api.get(`/regions/my-schools?districtId=${filters.districtId}&blockId=${filters.blockId}`).then((r) => setSchools(Array.isArray(unwrap(r)) ? unwrap(r) : [])).catch(() => setSchools([]));
   }, [filters.blockId, filters.districtId]);
+
+  const applySearch = () => {
+    if (page !== 1) setPage(1);
+    else load(1);
+  };
 
   const allSelected = students.length > 0 && students.every((s) => selected.has(String(s._id)));
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(students.map((s) => String(s._id))));
@@ -131,7 +139,7 @@ export default function Level1Dashboard() {
               <option value="">School</option>
               {visibleSchools.map((s) => <option key={s._id} value={s._id}>{s.schoolName}</option>)}
             </SearchableSelect>
-            <button className="secondary" onClick={load} disabled={loading}>{loading ? "Loading…" : "Search"}</button>
+            <button className="secondary" onClick={applySearch} disabled={loading}>{loading ? "Loading…" : "Search"}</button>
           </div>
 
           {error && <div className="error">{error}</div>}
@@ -149,7 +157,7 @@ export default function Level1Dashboard() {
                   const block = student.blockDistrictId?.blockName || blocks.find((b) => String(b._id) === String(student.blockDistrictId))?.blockName || "-";
                   const school = student.schoolDistrictId?.schoolName || schools.find((s) => String(s._id) === String(student.schoolDistrictId))?.schoolName || student.schoolNameManual || "-";
                   return <tr key={student._id}>
-                    <td>{index + 1}</td><td>{student.studentSrn}</td><td>{student.name}</td><td>{student.fatherName}</td><td>{district}</td><td>{block}</td><td>{school}</td>
+                    <td>{(pagination.page - 1) * pagination.limit + index + 1}</td><td>{student.studentSrn}</td><td>{student.name}</td><td>{student.fatherName}</td><td>{district}</td><td>{block}</td><td>{school}</td>
                     <td><Link to={`/official/register/${examType}/edit/${student.studentSrn}`}>Edit</Link></td>
                     <td><a href={`${API_BASE_URL}/students/acknowledgement/${student.slipId}`} target="_blank" rel="noreferrer">Acknowledgement</a></td>
                     <td><input type="checkbox" checked={selected.has(String(student._id))} onChange={() => toggleOne(student._id)} /></td>
@@ -158,6 +166,19 @@ export default function Level1Dashboard() {
                 {!students.length && <tr><td colSpan="10" className="empty-row">No registrations found.</td></tr>}
               </tbody>
             </table>
+          </div>
+
+          <div className="official-level-pagination">
+            <div className="official-level-pagination-info">
+              Showing <strong>{students.length ? (pagination.page - 1) * pagination.limit + 1 : 0}</strong>–<strong>{(pagination.page - 1) * pagination.limit + students.length}</strong> of <strong>{pagination.total}</strong> registrations
+            </div>
+            <div className="official-level-pagination-controls">
+              <button type="button" className="secondary" onClick={() => setPage(1)} disabled={loading || pagination.page <= 1}>First</button>
+              <button type="button" className="secondary" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={loading || pagination.page <= 1}>Previous</button>
+              <span>Page <strong>{pagination.page}</strong> of <strong>{Math.max(1, pagination.totalPages)}</strong></span>
+              <button type="button" className="secondary" onClick={() => setPage((current) => Math.min(pagination.totalPages || 1, current + 1))} disabled={loading || pagination.page >= pagination.totalPages}>Next</button>
+              <button type="button" className="secondary" onClick={() => setPage(pagination.totalPages || 1)} disabled={loading || pagination.page >= pagination.totalPages}>Last</button>
+            </div>
           </div>
         </div>
       </section>

@@ -72,11 +72,16 @@ export default function SchoolCenterPreference() {
     setBusy(true); setError(""); setMessage(""); setEditor(null); setViewing(null);
     try {
       const rows = unwrap(await api.get("/examination-centers/requirements", { params: { districtId: selectedDistrictId } })) || [];
-      setBlocks(rows.map(row => ({ ...row, numberOfSchools: row.numberOfSchools ?? "", expectedRegistrationCount8: row.expectedRegistrationCount8 ?? "", expectedRegistrationCount10: row.expectedRegistrationCount10 ?? "", totalCentersRequired: row.totalCentersRequired ?? "" })));
-      const pairs = await Promise.all(rows.map(async block => {
-        const centers = unwrap(await api.get(`/examination-centers/blocks/${block.blockId}/centers`)) || [];
-        return [block.blockId, centers];
-      }));
+      setBlocks(rows.map(row => ({ ...row,
+        expectedRegistrationsMB: row.expectedRegistrationsMB ?? "",
+        centersRequiredMB: row.centersRequiredMB ?? "",
+        expectedRegistrationsHS100: row.expectedRegistrationsHS100 ?? "",
+        centersRequiredHS100: row.centersRequiredHS100 ?? "",
+      })));
+      const pairs = await Promise.all(rows.flatMap(block => ["MB", "HS100"].map(async program => {
+        const centers = unwrap(await api.get(`/examination-centers/blocks/${block.blockId}/centers`, { params: { program } })) || [];
+        return [`${block.blockId}_${program}`, centers];
+      })));
       setCentersByBlock(Object.fromEntries(pairs));
     } catch (e) { setError(e.response?.data?.message || "Unable to load blocks"); }
     finally { setBusy(false); }
@@ -84,21 +89,21 @@ export default function SchoolCenterPreference() {
 
   const updateBlock = (blockId, key, value) => setBlocks(old => old.map(row => row.blockId === blockId ? { ...row, [key]: value } : row));
   const saveBlock = async block => {
-    if ([block.numberOfSchools, block.expectedRegistrationCount8, block.expectedRegistrationCount10, block.totalCentersRequired].some(v => v === "" || v === null || v === undefined)) { setError("Please fill all block requirement counts before submitting."); return; }
+    if ([block.expectedRegistrationsMB, block.centersRequiredMB, block.expectedRegistrationsHS100, block.centersRequiredHS100].some(v => v === "" || v === null || v === undefined)) { setError("Please fill all program-wise requirement counts before submitting."); return; }
     setBusy(true); setError(""); setMessage("");
     try {
       await api.put(`/examination-centers/blocks/${block.blockId}/requirements`, {
-        numberOfSchools: Number(block.numberOfSchools),
-        expectedRegistrationCount8: Number(block.expectedRegistrationCount8),
-        expectedRegistrationCount10: Number(block.expectedRegistrationCount10),
-        totalCentersRequired: Number(block.totalCentersRequired),
+        expectedRegistrationsMB: Number(block.expectedRegistrationsMB),
+        centersRequiredMB: Number(block.centersRequiredMB),
+        expectedRegistrationsHS100: Number(block.expectedRegistrationsHS100),
+        centersRequiredHS100: Number(block.centersRequiredHS100),
       });
       setBlocks(old => old.map(row => row.blockId === block.blockId ? {
         ...row, isSubmitted: true,
-        numberOfSchools: Number(block.numberOfSchools),
-        expectedRegistrationCount8: Number(block.expectedRegistrationCount8),
-        expectedRegistrationCount10: Number(block.expectedRegistrationCount10),
-        totalCentersRequired: Number(block.totalCentersRequired),
+        expectedRegistrationsMB: Number(block.expectedRegistrationsMB),
+        centersRequiredMB: Number(block.centersRequiredMB),
+        expectedRegistrationsHS100: Number(block.expectedRegistrationsHS100),
+        centersRequiredHS100: Number(block.centersRequiredHS100),
       } : row));
       setMessage(`${block.blockName}: block details saved. School Preference is now active.`);
     } catch (e) { setError(e.response?.data?.message || "Unable to save block details"); }
@@ -163,8 +168,8 @@ export default function SchoolCenterPreference() {
       const payload = { ...form, examinationCenterCapacity: Number(form.examinationCenterCapacity), paperCount: Number(form.paperCount || 0), schools };
       if (centerId) await api.put(`/examination-centers/centers/${centerId}`, payload);
       else await api.post(`/examination-centers/blocks/${block.blockId}/centers`, payload);
-      const rows = unwrap(await api.get(`/examination-centers/blocks/${block.blockId}/centers`)) || [];
-      setCentersByBlock(old => ({ ...old, [block.blockId]: rows }));
+      const rows = unwrap(await api.get(`/examination-centers/blocks/${block.blockId}/centers`, { params: { program: form.examType || "MB" } })) || [];
+      setCentersByBlock(old => ({ ...old, [`${block.blockId}_${form.examType || "MB"}`]: rows }));
       setEditor(null);
       setMessage(centerId ? "Center and school preferences updated." : "Center and school preferences submitted successfully.");
     } catch (e) { setError(e.response?.data?.message || "Unable to submit center and school preferences"); }
@@ -207,26 +212,30 @@ export default function SchoolCenterPreference() {
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:12}}>
             {[
-              ["numberOfSchools","No. of Schools"],
-              ["expectedRegistrationCount8","Expected Registrations – 08"],
-              ["expectedRegistrationCount10","Expected Registrations – 10"],
-              ["totalCentersRequired","Total Centers Required"],
-            ].map(([key,label])=><label key={key} className="field" style={{margin:0}}><span style={{fontSize:14,fontWeight:800,minHeight:36}}>{label}</span><input type="number" min="0" step="1" placeholder="Enter value" value={block[key] ?? ""} onChange={e=>updateBlock(block.blockId,key,e.target.value)} style={{width:"100%",boxSizing:"border-box",borderRadius:10}} /></label>)}
+              ["expectedRegistrationsMB","Expected Registrations – Mission Buniyaad"],
+              ["centersRequiredMB","Centers Required For Mission Buniyaad"],
+              ["expectedRegistrationsHS100","Expected Registrations – Haryana Super 100"],
+              ["centersRequiredHS100","Centers Required For Haryana Super 100"],
+            ].map(([key,label])=><label key={key} className="field" style={{margin:0}}><span style={{fontSize:14,fontWeight:800,minHeight:48}}>{label}</span><input type="number" min="0" step="1" placeholder="Enter value" value={block[key] ?? ""} onChange={e=>updateBlock(block.blockId,key,e.target.value)} style={{width:"100%",boxSizing:"border-box",borderRadius:10}} /></label>)}
           </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:16}}>
-            <button type="button" className="primary" onClick={()=>saveBlock(block)} disabled={busy} style={{flex:"1 1 140px",minHeight:46,borderRadius:11,fontSize:14,fontWeight:800}}>Save Requirements</button>
-            <button type="button" onClick={()=>navigate("/school-center-preference/form",{state:{block,districtId}})} disabled={!block.isSubmitted||busy} style={{flex:"1 1 170px",minHeight:46,borderRadius:11,fontSize:14,fontWeight:800}}>Add Examination Centers</button>
-          </div>
-          <button type="button" onClick={()=>navigate(`/school-center-preference/blocks/${block.blockId}/schools`,{state:{districtId,blockName:block.blockName,returnTo:`/school-center-preference?districtId=${districtId}`}})} disabled={!block.isSubmitted||(centersByBlock[block.blockId]||[]).length<Number(block.totalCentersRequired||0)||busy} style={{width:"100%",marginTop:9,minHeight:46,borderRadius:11,fontSize:14,fontWeight:800}}>Add School Preference · {(centersByBlock[block.blockId]||[]).length}/{block.totalCentersRequired||0} centers</button>
-          <div style={{fontSize:11,color:"#94a3b8",marginTop:9}}>School preferences become available after all required centers are created.</div>
+          <button type="button" className="primary" onClick={()=>saveBlock(block)} disabled={busy} style={{width:"100%",marginTop:16,minHeight:46,borderRadius:11,fontSize:14,fontWeight:800}}>Save Requirements</button>
+          {["MB","HS100"].map(program => {
+            const label = program === "MB" ? "MB" : "HS100";
+            const list = centersByBlock[`${block.blockId}_${program}`] || [];
+            const required = Number(program === "MB" ? block.centersRequiredMB || 0 : block.centersRequiredHS100 || 0);
+            return <div key={program} style={{marginTop:14,paddingTop:12,borderTop:"1px solid #e2e8f0"}}>
+              <button type="button" onClick={()=>navigate("/school-center-preference/form",{state:{block:{...block, program, totalCentersRequired:required},districtId,program}})} disabled={!block.isSubmitted||busy} style={{width:"100%",minHeight:44,borderRadius:10,fontWeight:800}}>Add Examination Centers – {label} ({list.length}/{required})</button>
+              <button type="button" onClick={()=>navigate(`/school-center-preference/blocks/${block.blockId}/schools?program=${program}`,{state:{districtId,blockName:block.blockName,program,returnTo:`/school-center-preference?districtId=${districtId}`}})} disabled={!block.isSubmitted||required<=0||list.length<required||busy} style={{width:"100%",marginTop:8,minHeight:44,borderRadius:10,fontWeight:800}}>Add School Preference – {list.length}/{required} {label}</button>
+            </div>;
+          })}
         </div>)}
       </div>
     </div>}
 
-    {blocks.filter(block => (centersByBlock[block.blockId] || []).length > 0).map(block => <div className="panel" key={block.blockId}>
-      <div className="panel-head"><h3>{block.blockName} – Created Centers</h3><span>{(centersByBlock[block.blockId] || []).length} centers</span></div>
-      <div className="table-wrap"><table><thead><tr><th>#</th><th>Center Name</th><th>Center Code</th><th>Center Capacity</th><th>Total Preferred Schools</th><th>Action</th></tr></thead><tbody>
-        {(centersByBlock[block.blockId] || []).map((center, i) => <tr key={center._id}><td>{i + 1}</td><td>{center.examinationCenter}</td><td>{center.examinationCenterCode}</td><td>{center.examinationCenterCapacity}</td><td>{center.totalPreferredSchools || 0}</td><td><div style={{ display: "flex", gap: 8 }}><button type="button" onClick={async () => { try { const data = unwrap(await api.get(`/examination-centers/centers/${center._id}/schools`)); setViewing(data); } catch (e) { setError(e.response?.data?.message || "Unable to load schools"); } }}>View Schools</button><button type="button" onClick={() => openEditor(block, center)}>Edit</button></div></td></tr>)}
+    {blocks.filter(block => ["MB","HS100"].some(program => (centersByBlock[`${block.blockId}_${program}`] || []).length > 0)).map(block => <div className="panel" key={block.blockId}>
+      <div className="panel-head"><h3>{block.blockName} – Created Centers</h3></div>
+      <div className="table-wrap"><table><thead><tr><th>#</th><th>Center Name</th><th>Center Code</th><th>Center Capacity</th><th>Total Preferred Schools</th></tr></thead><tbody>
+        {["MB","HS100"].flatMap(program => (centersByBlock[`${block.blockId}_${program}`] || []).map(center => ({...center, _program:program}))).map((center, i) => <tr key={center._id}><td>{i + 1}</td><td>{center._program} · {center.examinationCenter}</td><td>{center.examinationCenterCode}</td><td>{center.examinationCenterCapacity}</td><td>{center.totalPreferredSchools || 0}</td></tr>)}
       </tbody></table></div>
     </div>)}
 

@@ -15,6 +15,7 @@ export default function SchoolCenterPreferenceForm() {
   const navigate = useNavigate();
   const block = state?.block;
   const districtId = state?.districtId;
+  const program = state?.program || block?.program || "MB";
   const [centers, setCenters] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState("");
@@ -24,10 +25,10 @@ export default function SchoolCenterPreferenceForm() {
 
   const loadCenters = async () => {
     if (!block?.blockId) return;
-    try { setCenters(unwrap(await api.get(`/examination-centers/blocks/${block.blockId}/centers`)) || []); }
+    try { setCenters(unwrap(await api.get(`/examination-centers/blocks/${block.blockId}/centers`, { params: { program } })) || []); }
     catch (e) { setError(e.response?.data?.message || "Unable to load examination centers"); }
   };
-  useEffect(() => { if (!block?.blockId) navigate("/school-center-preference", { replace: true }); else loadCenters(); }, [block?.blockId]);
+  useEffect(() => { if (!block?.blockId) navigate("/school-center-preference", { replace: true }); else loadCenters(); }, [block?.blockId, program]);
 
   if (!canAccess) return <WorkspaceShell><section className="admin-page"><h1>Access denied</h1></section></WorkspaceShell>;
   if (!block?.blockId) return <WorkspaceShell><section className="admin-page"><div className="loading">Loading…</div></section></WorkspaceShell>;
@@ -47,7 +48,7 @@ export default function SchoolCenterPreferenceForm() {
     if (!editingId && !canAdd) { setError(`You can add only ${required} active examination centers. Remove a center before adding another.`); return; }
     setBusy(true); setError(""); setMessage("");
     try {
-      const payload = { examinationCenter: form.examinationCenter.trim(), examinationCenterCode: form.examinationCenterCode.trim(), examinationCenterCapacity: Number(form.examinationCenterCapacity) };
+      const payload = { examinationCenter: form.examinationCenter.trim(), examinationCenterCode: form.examinationCenterCode.trim(), examinationCenterCapacity: Number(form.examinationCenterCapacity), examType: program };
       if (editingId) await api.put(`/examination-centers/centers/${editingId}`, payload);
       else await api.post(`/examination-centers/blocks/${block.blockId}/centers`, payload);
       await loadCenters(); resetForm();
@@ -68,7 +69,7 @@ export default function SchoolCenterPreferenceForm() {
   };
 
   return <WorkspaceShell><section className="admin-page">
-    <div className="admin-page-head"><div><div className="eyebrow">EXAMINATION MANAGEMENT</div><h1>Examination Centers</h1><p>{block.blockName} · Manage the centers required for this block</p></div><button type="button" onClick={() => navigate("/school-center-preference", { state: { districtId } })}>Back</button></div>
+    <div className="admin-page-head"><div><div className="eyebrow">EXAMINATION MANAGEMENT</div><h1>Examination Centers – {program}</h1><p>{block.blockName} · Manage {program === "MB" ? "Mission Buniyaad" : "Haryana Super 100"} centers for this block</p></div><button type="button" onClick={() => navigate("/school-center-preference", { state: { districtId } })}>Back</button></div>
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:14, marginBottom:18 }}>
       {[{label:"Centers Created",value:centers.length},{label:"Centers Required",value:required},{label:"Remaining",value:Math.max(0,required-centers.length)}].map(item=><div key={item.label} className="panel" style={{padding:18,borderRadius:16,margin:0}}><div style={{fontSize:13,color:"#64748b",fontWeight:700}}>{item.label}</div><div style={{fontSize:28,fontWeight:800,color:"#29366b",marginTop:5}}>{item.value}</div></div>)}
     </div>

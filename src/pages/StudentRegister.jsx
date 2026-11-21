@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Field from "../components/Field";
 import PortalHeader from "../components/PortalHeader";
 import PortalFooter from "../components/PortalFooter";
@@ -40,10 +40,12 @@ export default function StudentRegister({ editMode = false, officialMode = false
   const classOfStudent = examType === "MB" ? 8 : 10;
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [stage, setStage] = useState(editMode ? "form" : "lookup");
   const [officialStudentId, setOfficialStudentId] = useState(null);
   const [srn, setSrn] = useState(editSrn || "");
+  const [originalStudentSrn, setOriginalStudentSrn] = useState("");
   const [form, setForm] = useState({ ...blank, classOfStudent });
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
@@ -178,6 +180,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
           previousClassResult: student.previousClassResult || null,
         });
 
+        setOriginalStudentSrn(String(student.studentSrn || "").trim());
         setForm({
           ...blank,
           studentSrn: student.studentSrn || "",
@@ -426,6 +429,17 @@ export default function StudentRegister({ editMode = false, officialMode = false
     event.preventDefault();
     setError("");
     setMessage("");
+
+    // An existing SRN is allowed to remain unchanged. Validate its format
+    // only when the user actually edits it.
+    if (allRegistrationsMode) {
+      const nextSrn = String(form.studentSrn ?? "").trim();
+      if (nextSrn !== originalStudentSrn && !/^\d{10}$/.test(nextSrn)) {
+        setError("If you change the SRN, it must be exactly 10 digits.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -446,7 +460,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
         }
       });
 
-      payload.set("studentSrn", srn || form.studentSrn);
+      payload.set("studentSrn", allRegistrationsMode ? String(form.studentSrn || "").trim() : (srn || form.studentSrn));
       payload.set("examType", examType);
       payload.set("schoolEntry", form.schoolEntry || "db");
       payload.set("schoolNameManual", form.schoolEntry === "manual" ? manualSchoolName.trim() : "");
@@ -471,7 +485,10 @@ export default function StudentRegister({ editMode = false, officialMode = false
       setMessage(editMode ? "Registration updated successfully." : "Registration submitted successfully.");
 
       if (allRegistrationsMode) {
-        navigate(`/official/registrations/${examType}`, { replace: true });
+        navigate(`/official/registrations/${examType}`, {
+          replace: true,
+          state: { returnFilters: location.state?.returnFilters || null, returnPage: location.state?.returnPage || 1 },
+        });
       } else {
         navigate(
           `/registration-success/${student.slipId}?srn=${encodeURIComponent(student.studentSrn)}&examType=${examType}&editable=1${officialMode ? "&official=1" : ""}&next=${encodeURIComponent(`/official/register/${examType}`)}`,
@@ -544,6 +561,9 @@ export default function StudentRegister({ editMode = false, officialMode = false
               <Field label="Student Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               <Field label="Father Name *" value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} required />
               <Field label={allRegistrationsMode ? "Mother Name" : "Mother Name *"} value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} required={!allRegistrationsMode} />
+              {allRegistrationsMode && (
+                <Field label="SRN" value={form.studentSrn} maxLength={10} inputMode="numeric" onChange={(e) => setForm({ ...form, studentSrn: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
+              )}
               {allRegistrationsMode && (
                 <label className="field"><span>Class *</span><SearchableSelect value={String(form.classOfStudent || classOfStudent)} onChange={(e) => setForm((current) => ({ ...current, classOfStudent: Number(e.target.value) }))} required><option value="8">Class 8</option><option value="10">Class 10</option></SearchableSelect></label>
               )}

@@ -9,6 +9,7 @@ import SearchableSelect from "../components/SearchableSelect";
 
 const ROLE_SCOPE = {
   ACI: "district",
+  DSS: "district",
   CENTER_COORDINATOR: "block",
   HKRN: "block",
   ABRC: "block",
