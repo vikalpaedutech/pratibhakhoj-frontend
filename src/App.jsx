@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import Layout from "./components/Layout";
 import Landing from "./pages/Landing";
 import StudentRegister from "./pages/StudentRegister";
@@ -33,13 +33,16 @@ import SchoolCenterPreference from "./pages/SchoolCenterPreference";
 import SchoolCenterPreferenceForm from "./pages/SchoolCenterPreferenceForm";
 import SchoolCenterPreferenceSchools from "./pages/SchoolCenterPreferenceSchools";
 import AttendanceSheetDlc from "./pages/AttendanceSheetDlc";
+import AdminDownloadStudentsData from "./pages/admin/AdminDownloadStudentsData";
 
 function Protected({ children, admin = false, schoolVisit = false, dashboardCode = "", permissionCode = "", permissionByParam = null }) {
   const { user, role, loading, schoolVisitAccess, dashboardAccess = [], permissions = [] } = useAuth();
   const params = useParams();
+  const location = useLocation();
   const resolvedPermissionCode = permissionByParam?.[params.type || params.examType] || permissionCode;
   if (loading) return <div className="loading">Loading…</div>;
   if (!user) return <Navigate to="/official/login" replace />;
+  if (role?.code === "DSS" && !permissionCode && !permissionByParam && !admin && !schoolVisit && !dashboardCode && location.pathname === "/official") return <Navigate to="/school-center-preference" replace />;
   if (admin && role?.code !== "ADMIN") return <Navigate to="/official" replace />;
   if (schoolVisit && !schoolVisitAccess) return <Navigate to="/official" replace />;
   if (dashboardCode && role?.code !== "ADMIN" && !dashboardAccess.includes(dashboardCode)) return <Navigate to="/official" replace />;
@@ -87,6 +90,7 @@ export default function App() {
         <Route path="/admin/permissions" element={<Protected admin={true}><AdminPermissions /></Protected>} />
         <Route path="/admin/exam-controller" element={<Protected admin={true}><ExamController /></Protected>} />
         <Route path="/admin/examination-centers" element={<Protected admin={true}><ExaminationCenters /></Protected>} />
+        <Route path="/admin/download-students-data" element={<Protected admin={true}><AdminDownloadStudentsData /></Protected>} />
         <Route path="/school-center-preference" element={<Protected permissionCode="SCHOOL_CENTER_PREFERENCE"><SchoolCenterPreference /></Protected>} />
         <Route path="/school-center-preference/form" element={<Protected permissionCode="SCHOOL_CENTER_PREFERENCE"><SchoolCenterPreferenceForm /></Protected>} />
         <Route path="/school-center-preference/blocks/:blockId/schools" element={<Protected permissionCode="SCHOOL_CENTER_PREFERENCE"><SchoolCenterPreferenceSchools /></Protected>} />

@@ -195,7 +195,7 @@ export default function SchoolCenterPreference() {
           menuPortalTarget={document.body}
           styles={selectStyles}
         /></label>
-        <div className="scp-district-submit"><button type="button" className="primary" onClick={() => loadBlocks(districtId)} disabled={busy || !districtId}>{busy ? "Please wait…" : "Load Blocks"}</button></div>
+        <div className="scp-district-submit"><button type="button" className="primary" onClick={() => loadBlocks(districtId)} disabled={busy || !districtId}>{busy ? "Please wait…" : "Submit"}</button></div>
       </div>
     </div>
 
@@ -216,7 +216,7 @@ export default function SchoolCenterPreference() {
               ["centersRequiredMB","Centers Required For Mission Buniyaad"],
               ["expectedRegistrationsHS100","Expected Registrations – Haryana Super 100"],
               ["centersRequiredHS100","Centers Required For Haryana Super 100"],
-            ].map(([key,label])=><label key={key} className="field" style={{margin:0}}><span style={{fontSize:14,fontWeight:800,minHeight:48}}>{label}</span><input type="number" min="0" step="1" placeholder="Enter value" value={block[key] ?? ""} onChange={e=>updateBlock(block.blockId,key,e.target.value)} style={{width:"100%",boxSizing:"border-box",borderRadius:10}} /></label>)}
+             ].map(([key,label])=><label key={key} className="field scp-requirement-field" style={{margin:0,minWidth:0}}><span style={{fontSize:14,fontWeight:800,height:76,minHeight:76,lineHeight:1.35,display:"flex",alignItems:"flex-start"}}>{label}</span><input type="number" min="0" step="1" placeholder="Enter value" value={block[key] ?? ""} onChange={e=>updateBlock(block.blockId,key,e.target.value)} style={{width:"100%",height:48,boxSizing:"border-box",border:"2px solid #202020",borderRadius:10,fontWeight:700,color:"#172554",background:"#fff",padding:"10px 12px"}} /></label>)}
           </div>
           <button type="button" className="primary" onClick={()=>saveBlock(block)} disabled={busy} style={{width:"100%",marginTop:16,minHeight:46,borderRadius:11,fontSize:14,fontWeight:800}}>Save Requirements</button>
           {["MB","HS100"].map(program => {

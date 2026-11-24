@@ -10,3 +10,12 @@ Password reset uses the existing FRONTEND_ORIGINS and BREVO_API_KEY / BREVO_FROM
 Updates from document 24(1).docx
 4. School Center Preference block requirement count inputs now start blank and must be entered before submission. The center/school preference editor now opens on a separate route. Removed Adjustments, Exam Level and Paper Count from the form; Exam Type is a Mission Buniyaad / Haryana Super 100 dropdown, Exam Level is saved as 1, and Paper Count is saved as null. Only the relevant 8th or 10th expected count is shown and submitted for the selected exam type.
 5. Reworked User Region Access into a role-filtered user table with name/contact search and a Manage modal supporting multiple district, block and school assignments through react-select. Existing global access is retained and can be granted or cleared from the modal.
+
+2026-11-24 updates:
+- Examination center codes are now scoped by examType (MB/HS100), allowing the same center name/code in both exam types.
+- School preference rows now contain one own-block Preference dropdown, autosave on selection, and support clearing with the dropdown cross.
+- The School Center Preference block loader button is labelled Submit.
+- DSS users are routed to School Center Preference immediately after login and when opening the official dashboard route.
+- MB and HS100 Registration Management pages include a full Excel export of all active Level 1 registrations for the selected exam type, with requested ObjectId and resolved region-name columns.
+
+Backend deployment note: run `npm run migrate:examination-center-index` once after deploying to replace the old globally unique center-code index with the examType-scoped compound index.

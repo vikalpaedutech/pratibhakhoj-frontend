@@ -24,7 +24,7 @@ export default function OfficialLogin() {
     setLoading(true);
     try {
       const data = await login(contact, password);
-      navigate("/official", { replace: true });
+      navigate(data.role?.code === "DSS" ? "/school-center-preference" : "/official", { replace: true });
     } catch (err) {
       const status = err.response?.status;
       const message = err.response?.data?.message || "";

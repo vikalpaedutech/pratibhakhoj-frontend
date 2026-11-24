@@ -48,6 +48,7 @@ export default function AdminShell({ children }) {
         ["Verification Users", "/admin/verification-users"],
         ["Permissions", "/admin/permissions"],
         ["Examination Centers", "/admin/examination-centers"],
+        ["Download Students Data", "/admin/download-students-data"],
         ["School Center Preference", "/school-center-preference"],
         ["Exam Controller", "/admin/exam-controller"],
       ],

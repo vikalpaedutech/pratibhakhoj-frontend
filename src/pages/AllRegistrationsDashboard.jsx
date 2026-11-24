@@ -123,6 +123,7 @@ export default function AllRegistrationsDashboard() {
     } finally { setDeletingId(""); }
   };
 
+
   const bulkAck = async () => {
     if (!selected.size || bulkAckLoading) return;
     setBulkAckLoading(true);
@@ -161,9 +162,11 @@ export default function AllRegistrationsDashboard() {
               <h1>{exam.label} Registrations</h1>
               {/* <p className="dashboard-access-inherited-note">This screen is independent of region access and shows all active registrations for this examination.</p> */}
             </div>
-            <button className="primary" onClick={bulkAck} disabled={!selected.size || !isAllowed || bulkAckLoading}>
-              {bulkAckLoading ? <><span className="button-spinner" aria-hidden="true" />Preparing slips…</> : "Download All Slip"}
-            </button>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <button className="primary" onClick={bulkAck} disabled={!selected.size || !isAllowed || bulkAckLoading}>
+                {bulkAckLoading ? <><span className="button-spinner" aria-hidden="true" />Preparing slips…</> : "Download All Slip"}
+              </button>
+            </div>
           </div>
 
           {!isAllowed ? (

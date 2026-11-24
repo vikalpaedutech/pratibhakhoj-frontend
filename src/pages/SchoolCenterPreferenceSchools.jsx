@@ -25,7 +25,7 @@ export default function SchoolCenterPreferenceSchools() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const program = searchParams.get("program") || state?.program || "MB";
-  const [data, setData] = useState({ block: null, schools: [], centers: [], otherBlockCenters: [] });
+  const [data, setData] = useState({ block: null, schools: [], centers: [] });
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(true);
   const [saving, setSaving] = useState({});
@@ -50,37 +50,22 @@ export default function SchoolCenterPreferenceSchools() {
     value: c._id,
     label: `${c.examinationCenter} (${c.examinationCenterCode})`,
   })), [data.centers]);
-  const otherBlockOptions = useMemo(() => (data.otherBlockCenters || []).map(c => ({
-    value: c._id,
-    label: `${c.blockName || "Other Block"} – ${c.examinationCenter} (${c.examinationCenterCode})`,
-  })), [data.otherBlockCenters]);
-  const change = (schoolId, key, option) => setData(old => ({
-    ...old,
-    schools: old.schools.map(s => {
-      if (s._id !== schoolId) return s;
-      const selectedValue = option?.value || "";
-      // A school can have only one center preference per program:
-      // selecting an own-block center clears the other-block center, and vice versa.
-      if (key === "preference1" && selectedValue) {
-        return { ...s, preference1: selectedValue, otherBlockPreference: "" };
-      }
-      if (key === "otherBlockPreference" && selectedValue) {
-        return { ...s, otherBlockPreference: selectedValue, preference1: "" };
-      }
-      return { ...s, [key]: selectedValue };
-    }),
-  }));
-  const save = async school => {
-    setSaving(old => ({ ...old, [school._id]: true })); setError(""); setMessage("");
+  const change = async (schoolId, option) => {
+    const selectedValue = option?.value || "";
+    const school = data.schools.find(item => item._id === schoolId);
+    if (!school) return;
+    setData(old => ({ ...old, schools: old.schools.map(item => item._id === schoolId ? { ...item, preference1: selectedValue } : item) }));
+    setSaving(old => ({ ...old, [schoolId]: true })); setError(""); setMessage("");
     try {
-      await api.put(`/examination-centers/blocks/${blockId}/schools/${school._id}/preferences`, {
-        preference1: idOf(school.otherBlockPreference) ? null : (idOf(school.preference1) || null),
-        otherBlockPreference: idOf(school.otherBlockPreference) || null,
+      await api.put(`/examination-centers/blocks/${blockId}/schools/${schoolId}/preferences`, {
+        preference1: selectedValue || null,
         program,
       });
-      setMessage(`Preferences saved for ${school.schoolName}.`);
-    } catch (e) { setError(e.response?.data?.message || `Unable to save preference for ${school.schoolName}`); }
-    finally { setSaving(old => ({ ...old, [school._id]: false })); }
+      setMessage(`Preference ${selectedValue ? "saved" : "removed"} for ${school.schoolName}.`);
+    } catch (e) {
+      setData(old => ({ ...old, schools: old.schools.map(item => item._id === schoolId ? { ...item, preference1: school.preference1 || "" } : item) }));
+      setError(e.response?.data?.message || `Unable to save preference for ${school.schoolName}`);
+    } finally { setSaving(old => ({ ...old, [schoolId]: false })); }
   };
 
   const goBack = () => {
@@ -99,18 +84,16 @@ export default function SchoolCenterPreferenceSchools() {
       <div className="scp-result-count">Showing <strong>{filtered.length}</strong> of <strong>{data.schools.length}</strong> schools</div>
     </div>
     {busy ? <div className="panel loading">Loading schools…</div> : <div className="panel scp-school-table-panel">
-      <div className="scp-table-caption"><div><h2>School-wise Preferences</h2><p>Choose one examination center for each school and save each row individually.</p></div><span>{filtered.length} schools</span></div>
+      <div className="scp-table-caption"><div><h2>School-wise Preferences</h2><p>Select one examination center for each school. Changes are saved automatically.</p></div><span>{filtered.length} schools</span></div>
       <div className="table-wrap scp-school-table-wrap"><table className="scp-school-table">
-        <thead><tr><th className="scp-sno-col">S.No.</th><th className="scp-school-col">School Name / Code</th><th>Preference</th><th>Other Blocks Centers</th><th className="scp-action-col">Action</th></tr></thead>
+        <thead><tr><th className="scp-sno-col">S.No.</th><th className="scp-school-col">School Name / Code</th><th>Preference</th></tr></thead>
         <tbody>
           {filtered.map((school,index) => <tr key={school._id}>
             <td className="scp-sno-col">{index + 1}</td>
             <td className="scp-school-col"><strong>{school.schoolName}</strong><span>{school.schoolCode || "—"}</span></td>
-            <td><Select classNamePrefix="scp-select" options={options} value={options.find(o=>o.value===idOf(school.preference1))||null} onChange={option=>change(school._id,"preference1",option)} placeholder="Select center…" isClearable isSearchable menuPortalTarget={document.body} styles={selectStyles} /></td>
-            <td><Select classNamePrefix="scp-select" options={otherBlockOptions} value={otherBlockOptions.find(o=>o.value===idOf(school.otherBlockPreference))||null} onChange={option=>change(school._id,"otherBlockPreference",option)} placeholder="Select center from another block…" isClearable isSearchable isDisabled={!otherBlockOptions.length} menuPortalTarget={document.body} styles={selectStyles} /></td>
-            <td className="scp-action-col"><button type="button" className="scp-save-btn" disabled={!!saving[school._id]} onClick={()=>save(school)}>{saving[school._id] ? "Saving…" : "Submit"}</button></td>
+            <td><Select classNamePrefix="scp-select" options={options} value={options.find(o=>o.value===idOf(school.preference1))||null} onChange={option=>change(school._id,option)} placeholder="Select Preference" isClearable isSearchable isDisabled={!!saving[school._id]} menuPortalTarget={document.body} styles={selectStyles} /></td>
           </tr>)}
-          {!filtered.length && <tr><td colSpan="5" className="scp-empty-state">No schools found. Try another school name or code.</td></tr>}
+          {!filtered.length && <tr><td colSpan="3" className="scp-empty-state">No schools found. Try another school name or code.</td></tr>}
         </tbody>
       </table></div>
     </div>}
