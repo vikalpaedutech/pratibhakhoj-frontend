@@ -6,6 +6,7 @@ import PortalFooter from "../components/PortalFooter";
 import OfficialShell from "../components/OfficialShell";
 import { api, unwrap } from "../api/client";
 import SearchableSelect from "../components/SearchableSelect";
+import { useAuth } from "../context/AuthContext";
 
 const blank = {
   studentSrn: "",
@@ -34,6 +35,7 @@ const blank = {
 
 export default function StudentRegister({ editMode = false, officialMode = false, allRegistrationsMode = false }) {
   const { type, examType: routeExamType, srn: editSrn, id: editId } = useParams();
+  const { user } = useAuth();
   const selectedExamType = type || routeExamType;
   const examType = selectedExamType === "HS100" ? "HS100" : "MB";
   const examName = examType === "MB" ? "Mission Buniyaad" : "Haryana Super 100";
@@ -44,6 +46,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
 
   const [stage, setStage] = useState(editMode ? "form" : "lookup");
   const [officialStudentId, setOfficialStudentId] = useState(null);
+  const [isOwnOfficialRegistration, setIsOwnOfficialRegistration] = useState(false);
   const [srn, setSrn] = useState(editSrn || "");
   const [originalStudentSrn, setOriginalStudentSrn] = useState("");
   const [form, setForm] = useState({ ...blank, classOfStudent });
@@ -173,7 +176,10 @@ export default function StudentRegister({ editMode = false, officialMode = false
             ? student.schoolDistrictId?._id
             : student.schoolDistrictId;
 
-        if (officialMode) setOfficialStudentId(student._id);
+        if (officialMode) {
+          setOfficialStudentId(student._id);
+          setIsOwnOfficialRegistration(String(student.isRegisteredBy?._id || student.isRegisteredBy || "") === String(user?._id || ""));
+        }
 
         setExistingFiles({
           studentImage: student.studentImage || null,
@@ -238,7 +244,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
     };
 
     loadStudent();
-  }, [editMode, editSrn, editId, examType, classOfStudent, officialMode, allRegistrationsMode]);
+  }, [editMode, editSrn, editId, examType, classOfStudent, officialMode, allRegistrationsMode, user?._id]);
 
   const checkSrn = async (event) => {
     event.preventDefault();
@@ -560,7 +566,7 @@ export default function StudentRegister({ editMode = false, officialMode = false
             <div className="form-grid">
               <Field label="Student Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               <Field label="Father Name *" value={form.fatherName} onChange={(e) => setForm({ ...form, fatherName: e.target.value })} required />
-              <Field label={allRegistrationsMode ? "Mother Name" : "Mother Name *"} value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} required={!allRegistrationsMode} />
+              <Field label={allRegistrationsMode ? "Mother Name" : "Mother Name *"} value={form.motherName} onChange={(e) => setForm({ ...form, motherName: e.target.value })} required={!allRegistrationsMode && !(officialMode && editMode && isOwnOfficialRegistration)} />
               {allRegistrationsMode && (
                 <Field label="SRN" value={form.studentSrn} maxLength={10} inputMode="numeric" onChange={(e) => setForm({ ...form, studentSrn: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
               )}
